@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, abort, make_response
 
 from app import db
 from app.models import (
@@ -234,6 +234,14 @@ def delete_routine(routine_id):
 # ---------------------------------------------------------------------------
 
 
+def _get_session_or_404(session_id):
+    """Helper to get a session or abort with a 404 JSON response."""
+    session = db.session.get(Session, session_id)
+    if not session:
+        abort(make_response(jsonify({"error": "Session not found"}), 404))
+    return session
+
+
 @api_bp.route("/sessions", methods=["POST"])
 def start_session():
     """Start a new session from a routine."""
@@ -266,18 +274,14 @@ def start_session():
 @api_bp.route("/sessions/<int:session_id>", methods=["GET"])
 def get_session(session_id):
     """Get full session with entries and sets."""
-    session = db.session.get(Session, session_id)
-    if not session:
-        return jsonify({"error": "Session not found"}), 404
+    session = _get_session_or_404(session_id)
     return jsonify(session.to_dict())
 
 
 @api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
 def complete_session(session_id):
     """Complete a session. Updates each machine's lastSession with all sets."""
-    session = db.session.get(Session, session_id)
-    if not session:
-        return jsonify({"error": "Session not found"}), 404
+    session = _get_session_or_404(session_id)
 
     if session.status == "completed":
         return jsonify({"error": "Session already completed"}), 400
