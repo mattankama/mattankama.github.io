@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, abort, jsonify, make_response, request
+from flask import Blueprint, jsonify, request, abort, make_response
 
 from app import db
 from app.models import (Exercise, Machine, Routine, Session, SessionEntry,
