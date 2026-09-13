@@ -9,7 +9,7 @@
     --color-ink: #E8E7E4;
     --color-structure: #799496;
     --color-muted: #4A5568;
-    --color-elevated: #232830;
+    --color-elevated: #191D24;
     --color-accent: #B87D4B;
 
     /* Neumorphic Shadows */
@@ -112,9 +112,9 @@ h1, .exercise-title {
     height: 64px;
     border-radius: 50%;
     border: none;
-    background-color: var(--color-accent);
-    color: var(--color-surface);
-    box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.2), 4px 4px 8px rgba(0, 0, 0, 0.5);
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    box-shadow: var(--shadow-extrude);
     font-size: 28px;
     line-height: 1;
     cursor: pointer;
@@ -127,11 +127,11 @@ h1, .exercise-title {
 }
 
 .fab-complete:hover {
-    box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.2), 2px 2px 4px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-extrude-hover);
 }
 
 .fab-complete:active {
-    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.2), inset 3px 3px 6px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-inset);
 }
 
 .fab-complete:disabled {
@@ -170,17 +170,17 @@ h1, .exercise-title {
 }
 
 .btn-accent {
-    background-color: var(--color-accent);
-    color: var(--color-surface);
-    box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.2), 4px 4px 8px rgba(0, 0, 0, 0.5);
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    box-shadow: var(--shadow-extrude);
 }
 
 .btn-accent:hover {
-    box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.2), 2px 2px 4px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-extrude-hover);
 }
 
 .btn-accent:active {
-    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.2), inset 3px 3px 6px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-inset);
 }
 
 .btn-secondary,
