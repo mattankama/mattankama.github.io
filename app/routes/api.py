@@ -3,15 +3,8 @@ from datetime import datetime, timezone
 from flask import Blueprint, abort, jsonify, make_response, request
 
 from app import db
-from app.models import (
-    Exercise,
-    Machine,
-    Routine,
-    Session,
-    SessionEntry,
-    SessionSet,
-    routine_exercises,
-)
+from app.models import (Exercise, Machine, Routine, Session, SessionEntry,
+                        SessionSet, routine_exercises)
 
 api_bp = Blueprint("api", __name__)
 
@@ -44,7 +37,9 @@ def create_exercise():
     if not name:
         return jsonify({"error": "Exercise name is required"}), 400
 
-    existing = Exercise.query.filter(db.func.lower(Exercise.name) == name.lower()).first()
+    existing = Exercise.query.filter(
+        db.func.lower(Exercise.name) == name.lower()
+    ).first()
     if existing:
         return jsonify(existing.to_dict()), 200
 
@@ -204,7 +199,9 @@ def update_routine(routine_id):
     if "exercises" in data:
         # Clear existing associations
         db.session.execute(
-            routine_exercises.delete().where(routine_exercises.c.routine_id == routine.id)
+            routine_exercises.delete().where(
+                routine_exercises.c.routine_id == routine.id
+            )
         )
 
         exercises_data = data["exercises"]
@@ -357,10 +354,12 @@ def switch_entry_machine(entry_id):
     entry.machine_id = machine_id
     db.session.commit()
 
-    return jsonify({
-        "entry": entry.to_dict(),
-        "last_session": machine.last_session_data or [],
-    })
+    return jsonify(
+        {
+            "entry": entry.to_dict(),
+            "last_session": machine.last_session_data or [],
+        }
+    )
 
 
 @api_bp.route("/session-entries/<int:entry_id>/prefill", methods=["POST"])
@@ -407,7 +406,11 @@ def add_set(entry_id):
     entry = get_or_404_json(SessionEntry, entry_id, "Session entry not found")
 
     data = request.get_json(silent=True) or {}
-    max_pos = db.session.query(db.func.max(SessionSet.position)).filter_by(entry_id=entry.id).scalar()
+    max_pos = (
+        db.session.query(db.func.max(SessionSet.position))
+        .filter_by(entry_id=entry.id)
+        .scalar()
+    )
     position = (max_pos or 0) + 1 if max_pos is not None else 0
 
     new_set = SessionSet(
