@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 
+from sqlalchemy.orm import joinedload
+
 from app import db
 from app.models import (
     Exercise,
@@ -24,7 +26,7 @@ api_bp = Blueprint("api", __name__)
 @api_bp.route("/exercises", methods=["GET"])
 def list_exercises():
     """List all exercises with their machines."""
-    exercises = Exercise.query.order_by(Exercise.name).all()
+    exercises = Exercise.query.options(joinedload(Exercise.machines)).order_by(Exercise.name).all()
     return jsonify([e.to_dict() for e in exercises])
 
 
