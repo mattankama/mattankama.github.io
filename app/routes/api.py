@@ -26,7 +26,7 @@ def get_or_404_json(model, ident, error_message):
 @api_bp.route("/exercises", methods=["GET"])
 def list_exercises():
     """List all exercises with their machines."""
-    exercises = Exercise.query.order_by(Exercise.name).all()
+    exercises = Exercise.query.options(joinedload(Exercise.machines)).order_by(Exercise.name).all()
     return jsonify([e.to_dict() for e in exercises])
 
 
@@ -63,6 +63,13 @@ def delete_exercise(exercise_id):
 # Machines
 # ---------------------------------------------------------------------------
 
+def _get_machine_or_404(machine_id):
+    """Helper to get a machine by ID or abort with 404."""
+    machine = db.session.get(Machine, machine_id)
+    if not machine:
+        abort(make_response(jsonify({"error": "Machine not found"}), 404))
+    return machine
+
 
 @api_bp.route("/exercises/<int:exercise_id>/machines", methods=["POST"])
 def create_machine(exercise_id):
@@ -88,7 +95,7 @@ def create_machine(exercise_id):
 @api_bp.route("/machines/<int:machine_id>", methods=["DELETE"])
 def delete_machine(machine_id):
     """Delete a machine."""
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
     db.session.delete(machine)
     db.session.commit()
     return "", 204
@@ -97,7 +104,7 @@ def delete_machine(machine_id):
 @api_bp.route("/machines/<int:machine_id>/last-session", methods=["GET"])
 def get_machine_last_session(machine_id):
     """Get last session stats for a machine."""
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
     return jsonify({
         "machine_id": machine.id,
         "sets": machine.last_session_data or [],
@@ -216,6 +223,14 @@ def delete_routine(routine_id):
 # ---------------------------------------------------------------------------
 
 
+def _get_session_or_404(session_id):
+    """Helper to get a session or abort with a 404 JSON response."""
+    session = db.session.get(Session, session_id)
+    if not session:
+        abort(make_response(jsonify({"error": "Session not found"}), 404))
+    return session
+
+
 @api_bp.route("/sessions", methods=["POST"])
 def start_session():
     """Start a new session from a routine."""
@@ -246,17 +261,7 @@ def start_session():
 @api_bp.route("/sessions/<int:session_id>", methods=["GET"])
 def get_session(session_id):
     """Get full session with entries and sets."""
-    session = db.session.get(
-        Session,
-        session_id,
-        options=[
-            selectinload(Session.entries).joinedload(SessionEntry.exercise).selectinload(Exercise.machines),
-            selectinload(Session.entries).joinedload(SessionEntry.machine),
-            selectinload(Session.entries).selectinload(SessionEntry.sets)
-        ]
-    )
-    if not session:
-        return jsonify({"error": "Session not found"}), 404
+    session = _get_session_or_404(session_id)
     return jsonify(session.to_dict())
 
 
@@ -282,7 +287,7 @@ def update_machine_stats(session):
 @api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
 def complete_session(session_id):
     """Complete a session. Updates each machine's lastSession with all sets."""
-    session = get_or_404_json(Session, session_id, "Session not found")
+    session = _get_session_or_404(session_id)
 
     if session.status == "completed":
         return jsonify({"error": "Session already completed"}), 400
@@ -290,7 +295,15 @@ def complete_session(session_id):
     session.status = "completed"
     session.completed_at = datetime.now(timezone.utc)
 
-    update_machine_stats(session)
+    # Update lastSession for each machine used
+    for entry in session.entries:
+        if entry.machine_id and entry.sets:
+            machine = db.session.get(Machine, entry.machine_id)
+            if machine:
+                machine.last_session_data = [
+                    {"weight": s.weight, "reps": s.reps}
+                    for s in entry.sets
+                ]
 
     db.session.commit()
     return jsonify(session.to_dict())
@@ -311,7 +324,7 @@ def switch_entry_machine(entry_id):
     if not machine_id:
         return jsonify({"error": "machine_id is required"}), 400
 
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
 
     entry.machine_id = machine_id
     db.session.commit()
@@ -334,7 +347,7 @@ def prefill_entry(entry_id):
     if not machine_id:
         return jsonify({"error": "machine_id is required"}), 400
 
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
 
     entry.machine_id = machine_id
 
