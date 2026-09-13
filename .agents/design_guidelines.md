@@ -13,7 +13,7 @@
 | **Core approach** | Weight and size create hierarchy, not color or effects. Bold text marks what the user needs to read or act on; everything else recedes. |
 | **Palette** | Six fixed tokens (dark-mode-only), defined in Section 2. One accent, used sparingly. |
 | **Density** | Compact and thumb-friendly — built to be read and adjusted mid-set, often one-handed. |
-| **Surfaces** | Predominantly flat. Functional micro-shadows permitted on sticky elements for layer separation. No decorative shadows, blur, or gradients. |
+| **Surfaces** | Neumorphic (soft-embossed). We use subtle light and dark shadows to create depth, making elements appear extruded from or inset into the background surface, while maintaining minimalism. No blur or gradients. |
 | **Motion** | Minimal; only where it explains a real state change (the timer, a logged set). |
 
 ## 1. Core visual principles
@@ -22,9 +22,9 @@
 
 **Bold means meaningful.** Bold weight is reserved for what the user is reading or editing right now: the exercise name, the current weight, the rep count, the timer. Labels, units, and metadata stay at a lighter weight so bold text is never competing with itself.
 
-**Hierarchy without decoration.** Gradients, glassmorphism, and neumorphic effects are not part of this system. Size, weight, spacing, and the single accent color do all the work that effects would otherwise be asked to do. Functional micro-shadows on sticky elements and subtle elevation on inputs are permitted — they aid layer separation on a dark surface, not decoration.
+**Hierarchy without decoration.** Gradients and glassmorphism are not part of this system. Size, weight, spacing, and the single accent color do the main work of hierarchy. We use neumorphic effects (soft-embossed highlights and shadows) to create tactile depth—buttons extrude from the surface, inputs press into it—while remaining fundamentally minimal.
 
-**Flat by default.** No cards, no elevation, no containers, unless grouping content genuinely helps the user scan it faster. Subtle tinted panels (using the Elevated token) are permitted for visual rhythm.
+**Neumorphic by default.** We embrace soft UI depth. Instead of flat cards, interactive elements like buttons and containers extrude smoothly from the surface, while inputs and active states appear pressed (inset).
 
 **Built for the gym, not the pitch deck.** Sweaty hands, bad lighting, and glancing mid-set are the real usage conditions. Every choice should hold up there, not just in a mockup.
 
@@ -101,12 +101,12 @@
 
 ## 5. Surfaces & layout anatomy
 
-- Every screen sits flat on Surface. No blur, no translucency, no gradients — ever, not even subtle ones.
-- Sticky elements (timer bar, Complete Workout button) use an Elevated background with functional micro-shadows (`box-shadow: 0 1px 3px rgba(0,0,0,0.4)`) for layer separation.
-- Input fields and selects use an Elevated background with subtle shadows or borders to create a polished inset feel against the dark canvas.
-- Lists are the primary layout, not cards. An exercise and its sets form a flat, ordered list separated by hairlines.
+- The UI is neumorphic. Elements share the background color of their container and use combinations of light and dark shadows to create depth. No blur, no translucency, no gradients.
+- Sticky elements and buttons appear extruded using outer shadows (e.g., `-5px -5px 10px rgba(255,255,255,0.05), 5px 5px 10px rgba(0,0,0,0.5)`).
+- Input fields and selects appear pressed into the surface using inset shadows (e.g., `inset -3px -3px 6px rgba(255,255,255,0.05), inset 3px 3px 6px rgba(0,0,0,0.5)`).
+- Lists are the primary layout, not cards. An exercise and its sets form an ordered list separated by hairlines or soft neumorphic dividers.
 - Exercise entry blocks use a left accent border (`3px solid Structure`) with padding-left for visual rhythm as you scroll.
-- Routine panels on the home screen use an Elevated background with border-radius and optional micro-shadows for subtle grouping.
+- Routine panels on the home screen use a neumorphic extruded background with border-radius for subtle grouping.
 
 ### Component notes
 
@@ -114,9 +114,9 @@
 |---|---|
 | **Rest timer bar** | Pinned to the top of the screen at all times during a workout. Large, bold, tabular numerals in Ink; switches to Accent only while running. A divider line, not a shadow, separates it from the list below. |
 | **Exercise row** | Bold exercise name and current weight × reps in Ink. Machine name and set count sit below in Muted, Regular weight — clearly secondary. |
-| **Set stepper (+/− sets, weight, reps)** | Plain bold numerals with flat +/− controls on either side. No skeuomorphic button styling — a flat tap target is enough. |
+| **Set stepper (+/− sets, weight, reps)** | Plain bold numerals with neumorphic +/− controls on either side. The controls extrude from the surface and inset when pressed. |
 | **Machine switcher** | A simple inline selector, not a styled dropdown. Selecting or adding a machine swaps in that machine's own saved stats immediately, with no transition beyond the numbers changing. |
-| **Complete Workout button** | Pinned to the bottom of the screen. Solid Accent fill, bold label, full width. No gradient, no shadow — flat color is the entire treatment. |
+| **Complete Workout button** | Pinned to the bottom of the screen. Solid Accent fill, bold label, full width. Uses neumorphic shadows for a tactile appearance. |
 
 ## 6. Iconography
 
@@ -137,7 +137,6 @@
 
 - Gradients of any kind, on any surface or text.
 - Glassmorphism, frosted blur, or translucent panels.
-- Neumorphism or soft-embossed "pressed" shadows.
 - Oversized corner radii or an "everything is a pill" button style.
 - More than one accent color active on a single screen.
 - Decorative icons, multicolor icon packs, or icons used to fill empty space.
