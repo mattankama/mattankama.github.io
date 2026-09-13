@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy.orm import joinedload, selectinload
 
 from app import db
 from app.models import (
@@ -266,7 +267,15 @@ def start_session():
 @api_bp.route("/sessions/<int:session_id>", methods=["GET"])
 def get_session(session_id):
     """Get full session with entries and sets."""
-    session = db.session.get(Session, session_id)
+    session = db.session.get(
+        Session,
+        session_id,
+        options=[
+            selectinload(Session.entries).joinedload(SessionEntry.exercise).selectinload(Exercise.machines),
+            selectinload(Session.entries).joinedload(SessionEntry.machine),
+            selectinload(Session.entries).selectinload(SessionEntry.sets)
+        ]
+    )
     if not session:
         return jsonify({"error": "Session not found"}), 404
     return jsonify(session.to_dict())
