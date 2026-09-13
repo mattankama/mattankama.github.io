@@ -292,7 +292,7 @@ def complete_session(session_id):
             if machine:
                 machine.last_session_data = [
                     {"weight": s.weight, "reps": s.reps}
-                    for s in sorted(entry.sets, key=lambda s: s.position)
+                    for s in entry.sets
                 ]
 
     db.session.commit()
