@@ -296,14 +296,19 @@ def complete_session(session_id):
     session.completed_at = datetime.now(timezone.utc)
 
     # Update lastSession for each machine used
-    for entry in session.entries:
-        if entry.machine_id and entry.sets:
-            machine = db.session.get(Machine, entry.machine_id)
-            if machine:
-                machine.last_session_data = [
-                    {"weight": s.weight, "reps": s.reps}
-                    for s in entry.sets
-                ]
+    machine_ids = [entry.machine_id for entry in session.entries if entry.machine_id and entry.sets]
+    if machine_ids:
+        machines = Machine.query.filter(Machine.id.in_(machine_ids)).all()
+        machine_dict = {machine.id: machine for machine in machines}
+
+        for entry in session.entries:
+            if entry.machine_id and entry.sets:
+                machine = machine_dict.get(entry.machine_id)
+                if machine:
+                    machine.last_session_data = [
+                        {"weight": s.weight, "reps": s.reps}
+                        for s in sorted(entry.sets, key=lambda s: s.position)
+                    ]
 
     db.session.commit()
     return jsonify(session.to_dict())
