@@ -125,7 +125,7 @@ class SessionEntry(db.Model):
 
     exercise = db.relationship("Exercise", lazy=True)
     machine = db.relationship("Machine", lazy=True)
-    sets = db.relationship("SessionSet", backref="entry", cascade="all, delete-orphan", lazy=True,
+    sets = db.relationship("SessionSet", backref="entry", cascade="all, delete-orphan", lazy="joined",
                            order_by="SessionSet.position")
 
     def to_dict(self):

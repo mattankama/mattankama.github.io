@@ -142,6 +142,27 @@ class TestRoutinesAPI:
         exercises = client.get("/api/exercises").get_json()
         assert len(exercises) == 1
 
+    def test_create_routine_reuses_existing_machine(self, client):
+        ex_resp = client.post("/api/exercises", json={"name": "Bench Press"})
+        ex_id = ex_resp.get_json()["id"]
+        client.post(f"/api/exercises/{ex_id}/machines", json={"name": "Flat Bench"})
+
+        resp = client.post("/api/routines", json={
+            "name": "Push Day",
+            "exercises": [
+                {"name": "Bench Press", "machines": [{"name": "Flat Bench"}]}
+            ],
+        })
+        data = resp.get_json()
+        assert len(data["exercises"]) == 1
+        assert len(data["exercises"][0]["machines"]) == 1
+
+        # Only one exercise and one machine should exist globally
+        exercises = client.get("/api/exercises").get_json()
+        assert len(exercises) == 1
+        assert len(exercises[0]["machines"]) == 1
+        assert exercises[0]["machines"][0]["name"] == "Flat Bench"
+
     def test_list_routines(self, client):
         client.post("/api/routines", json={"name": "Push Day", "exercises": []})
         client.post("/api/routines", json={"name": "Pull Day", "exercises": []})
