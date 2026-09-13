@@ -149,10 +149,12 @@ def create_routine():
             db.session.flush()
 
         # Create machines if specified
+        existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
         for m_data in ex_data.get("machines", []):
             m_name = (m_data.get("name") or "").strip()
-            if m_name and not Machine.query.filter_by(exercise_id=exercise.id, name=m_name).first():
+            if m_name and m_name not in existing_machines:
                 db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+                existing_machines.add(m_name)
 
         # Link to routine
         db.session.execute(
@@ -203,10 +205,12 @@ def update_routine(routine_id):
                 db.session.add(exercise)
                 db.session.flush()
 
+            existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
             for m_data in ex_data.get("machines", []):
                 m_name = (m_data.get("name") or "").strip()
-                if m_name and not Machine.query.filter_by(exercise_id=exercise.id, name=m_name).first():
+                if m_name and m_name not in existing_machines:
                     db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+                    existing_machines.add(m_name)
 
             db.session.execute(
                 routine_exercises.insert().values(
