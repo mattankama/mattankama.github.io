@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models import (
@@ -168,7 +169,11 @@ def create_routine():
 @api_bp.route("/routines/<int:routine_id>", methods=["GET"])
 def get_routine(routine_id):
     """Get a routine with its exercises and machines."""
-    routine = db.session.get(Routine, routine_id)
+    routine = db.session.get(
+        Routine,
+        routine_id,
+        options=[joinedload(Routine.exercises).joinedload(Exercise.machines)]
+    )
     if not routine:
         return jsonify({"error": "Routine not found"}), 404
     return jsonify(routine.to_dict())
