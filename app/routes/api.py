@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, abort, make_response
-
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app import db
 from app.models import (Exercise, Machine, Routine, Session, SessionEntry,
