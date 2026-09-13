@@ -22,7 +22,7 @@ def create_app(config=None):
     basedir = os.path.abspath(os.path.dirname(__file__))
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, '..', 'rattlesnake.db')}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SECRET_KEY"] = "rattlesnake-dev-key"
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "rattlesnake-dev-key")
 
     # Override with test or custom config
     if config:
