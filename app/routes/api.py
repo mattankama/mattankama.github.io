@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, abort, make_response
 
+from sqlalchemy.orm import joinedload
+
 from app import db
 from app.models import (Exercise, Machine, Routine, Session, SessionEntry,
                         SessionSet, routine_exercises)
@@ -25,7 +27,7 @@ def get_or_404_json(model, ident, error_message):
 @api_bp.route("/exercises", methods=["GET"])
 def list_exercises():
     """List all exercises with their machines."""
-    exercises = Exercise.query.order_by(Exercise.name).all()
+    exercises = Exercise.query.options(joinedload(Exercise.machines)).order_by(Exercise.name).all()
     return jsonify([e.to_dict() for e in exercises])
 
 
@@ -62,6 +64,13 @@ def delete_exercise(exercise_id):
 # Machines
 # ---------------------------------------------------------------------------
 
+def _get_machine_or_404(machine_id):
+    """Helper to get a machine by ID or abort with 404."""
+    machine = db.session.get(Machine, machine_id)
+    if not machine:
+        abort(make_response(jsonify({"error": "Machine not found"}), 404))
+    return machine
+
 
 @api_bp.route("/exercises/<int:exercise_id>/machines", methods=["POST"])
 def create_machine(exercise_id):
@@ -87,7 +96,7 @@ def create_machine(exercise_id):
 @api_bp.route("/machines/<int:machine_id>", methods=["DELETE"])
 def delete_machine(machine_id):
     """Delete a machine."""
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
     db.session.delete(machine)
     db.session.commit()
     return "", 204
@@ -96,7 +105,7 @@ def delete_machine(machine_id):
 @api_bp.route("/machines/<int:machine_id>/last-session", methods=["GET"])
 def get_machine_last_session(machine_id):
     """Get last session stats for a machine."""
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
     return jsonify({
         "machine_id": machine.id,
         "sets": machine.last_session_data or [],
@@ -316,7 +325,7 @@ def switch_entry_machine(entry_id):
     if not machine_id:
         return jsonify({"error": "machine_id is required"}), 400
 
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
 
     entry.machine_id = machine_id
     db.session.commit()
@@ -339,7 +348,7 @@ def prefill_entry(entry_id):
     if not machine_id:
         return jsonify({"error": "machine_id is required"}), 400
 
-    machine = get_or_404_json(Machine, machine_id, "Machine not found")
+    machine = _get_machine_or_404(machine_id)
 
     entry.machine_id = machine_id
 
