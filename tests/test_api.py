@@ -97,6 +97,27 @@ class TestMachinesAPI:
         data = resp.get_json()
         assert data["sets"] == []
 
+    def test_get_last_session_with_data(self, client):
+        ex = client.post("/api/exercises", json={"name": "Chest Press"}).get_json()
+        m = client.post(f"/api/exercises/{ex['id']}/machines", json={"name": "Cybex"}).get_json()
+
+        # Manually set machine's last session data
+        from app.models import Machine as MachineModel
+        from app import db as _db
+        with client.application.app_context():
+            machine = _db.session.get(MachineModel, m["id"])
+            machine.last_session_data = [{"weight": 135, "reps": 10}, {"weight": 145, "reps": 8}]
+            _db.session.commit()
+
+        resp = client.get(f"/api/machines/{m['id']}/last-session")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert len(data["sets"]) == 2
+        assert data["sets"][0]["weight"] == 135
+        assert data["sets"][0]["reps"] == 10
+        assert data["sets"][1]["weight"] == 145
+        assert data["sets"][1]["reps"] == 8
+
     def test_get_last_session_not_found(self, client):
         resp = client.get("/api/machines/9999/last-session")
         assert resp.status_code == 404
@@ -129,6 +150,16 @@ class TestRoutinesAPI:
         resp = client.post("/api/routines", json={})
         assert resp.status_code == 400
 
+    def test_create_routine_empty_exercise_name(self, client):
+        resp = client.post("/api/routines", json={
+            "name": "Push Day",
+            "exercises": [{"name": "  "}],
+        })
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert data["name"] == "Push Day"
+        assert len(data["exercises"]) == 0
+
     def test_create_routine_reuses_existing_exercise(self, client):
         client.post("/api/exercises", json={"name": "Bench Press"})
         resp = client.post("/api/routines", json={
@@ -141,6 +172,27 @@ class TestRoutinesAPI:
         # Only one exercise should exist globally
         exercises = client.get("/api/exercises").get_json()
         assert len(exercises) == 1
+
+    def test_create_routine_reuses_existing_machine(self, client):
+        ex_resp = client.post("/api/exercises", json={"name": "Bench Press"})
+        ex_id = ex_resp.get_json()["id"]
+        client.post(f"/api/exercises/{ex_id}/machines", json={"name": "Flat Bench"})
+
+        resp = client.post("/api/routines", json={
+            "name": "Push Day",
+            "exercises": [
+                {"name": "Bench Press", "machines": [{"name": "Flat Bench"}]}
+            ],
+        })
+        data = resp.get_json()
+        assert len(data["exercises"]) == 1
+        assert len(data["exercises"][0]["machines"]) == 1
+
+        # Only one exercise and one machine should exist globally
+        exercises = client.get("/api/exercises").get_json()
+        assert len(exercises) == 1
+        assert len(exercises[0]["machines"]) == 1
+        assert exercises[0]["machines"][0]["name"] == "Flat Bench"
 
     def test_list_routines(self, client):
         client.post("/api/routines", json={"name": "Push Day", "exercises": []})
@@ -178,7 +230,8 @@ class TestRoutinesAPI:
         assert data["name"] == "Push Day Updated"
         assert len(data["exercises"]) == 2
 
-    def test_update_routine_partial(self, client):
+
+    def test_update_routine_empty_exercise_name(self, client):
         r = client.post("/api/routines", json={
             "name": "Push Day",
             "exercises": [{"name": "Bench Press"}],
@@ -186,6 +239,7 @@ class TestRoutinesAPI:
 
         resp = client.put(f"/api/routines/{r['id']}", json={
             "name": "Push Day Updated",
+            "exercises": [{"name": "Bench Press"}, {"name": " "}, {"name": ""}, {}],
         })
         assert resp.status_code == 200
         data = resp.get_json()
