@@ -43,7 +43,7 @@ def create_app(config=None):
 
     # Create tables
     with app.app_context():
-        from app import models  # noqa: F401 — ensure models are imported before create_all
-        db.create_all()
+        from app import models
+        models.db.create_all()
 
     return app
