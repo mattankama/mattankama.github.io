@@ -149,10 +149,20 @@ def create_routine():
             db.session.flush()
 
         # Create machines if specified
-        for m_data in ex_data.get("machines", []):
-            m_name = (m_data.get("name") or "").strip()
-            if m_name and not Machine.query.filter_by(exercise_id=exercise.id, name=m_name).first():
-                db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+        machine_names_raw = [(m.get("name") or "").strip() for m in ex_data.get("machines", [])]
+        machine_names = [n for n in machine_names_raw if n]
+
+        if machine_names:
+            existing_machines = {
+                m.name for m in Machine.query.filter(
+                    Machine.exercise_id == exercise.id,
+                    Machine.name.in_(machine_names)
+                ).all()
+            }
+            for m_name in machine_names:
+                if m_name not in existing_machines:
+                    db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+                    existing_machines.add(m_name)
 
         # Link to routine
         db.session.execute(
@@ -203,10 +213,20 @@ def update_routine(routine_id):
                 db.session.add(exercise)
                 db.session.flush()
 
-            for m_data in ex_data.get("machines", []):
-                m_name = (m_data.get("name") or "").strip()
-                if m_name and not Machine.query.filter_by(exercise_id=exercise.id, name=m_name).first():
-                    db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+            machine_names_raw = [(m.get("name") or "").strip() for m in ex_data.get("machines", [])]
+            machine_names = [n for n in machine_names_raw if n]
+
+            if machine_names:
+                existing_machines = {
+                    m.name for m in Machine.query.filter(
+                        Machine.exercise_id == exercise.id,
+                        Machine.name.in_(machine_names)
+                    ).all()
+                }
+                for m_name in machine_names:
+                    if m_name not in existing_machines:
+                        db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+                        existing_machines.add(m_name)
 
             db.session.execute(
                 routine_exercises.insert().values(
