@@ -301,6 +301,25 @@ def get_session(session_id):
     return jsonify(session.to_dict())
 
 
+def update_machine_stats(session):
+    """Update last_session_data for all machines used in this session."""
+    machine_ids = {entry.machine_id for entry in session.entries if entry.machine_id and entry.sets}
+    if not machine_ids:
+        return
+
+    machines = db.session.query(Machine).filter(Machine.id.in_(machine_ids)).all()
+    machine_map = {m.id: m for m in machines}
+
+    for entry in session.entries:
+        if entry.machine_id and entry.sets:
+            machine = machine_map.get(entry.machine_id)
+            if machine:
+                machine.last_session_data = [
+                    {"weight": s.weight, "reps": s.reps}
+                    for s in sorted(entry.sets, key=lambda s: s.position)
+                ]
+
+
 @api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
 def complete_session(session_id):
     """Complete a session. Updates each machine's lastSession with all sets."""
@@ -312,15 +331,7 @@ def complete_session(session_id):
     session.status = "completed"
     session.completed_at = datetime.now(timezone.utc)
 
-    # Update lastSession for each machine used
-    for entry in session.entries:
-        if entry.machine_id and entry.sets:
-            machine = db.session.get(Machine, entry.machine_id)
-            if machine:
-                machine.last_session_data = [
-                    {"weight": s.weight, "reps": s.reps}
-                    for s in sorted(entry.sets, key=lambda s: s.position)
-                ]
+    update_machine_stats(session)
 
     db.session.commit()
     return jsonify(session.to_dict())
