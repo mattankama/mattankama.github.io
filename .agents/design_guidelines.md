@@ -62,7 +62,7 @@
 
 ## 3. Typography
 
-**Font.** Use the platform's native system font. No custom or decorative typefaces — the app should look like it belongs on the device it's running on. (Not finalized: the exact stack depends on the eventual platform — see Section 9.)
+**Font.** The app uses custom web fonts to establish a modern, minimal aesthetic. `Inter` is used for body text and UI controls to ensure maximal legibility at small sizes. `Space Grotesk` is used for all numbers (timers, weight, reps) and primary headings (h1, screen titles, exercise names) to provide a distinct, tech-forward character.
 
 **Two weights only.** Bold and Regular. No light, thin, semi-bold, or italic — a third weight adds a hierarchy level this app doesn't need.
 
@@ -149,7 +149,7 @@
 
 | Decision | Status | Guidance |
 |---|---|---|
-| **Platform / font stack** | Open | Not specified in the brief. Use the eventual platform's native system font — do not introduce a custom typeface to resolve this. |
+| **Platform / font stack** | Resolved | The app uses `Inter` for standard UI text and `Space Grotesk` for headings and tabular numbers, loaded via Google Fonts. |
 | **Exact corner radius** | Not specified | The rule (one value, modest, used everywhere) is set; the numeric value is left to implementation. |
 
 ## 10. Implementation token sheet
@@ -183,7 +183,7 @@
 
 ### Source scope
 
-Built from the app's CONTEXT.md (workout creation, active-workout, and completion flows) and the dark-mode-only palette. No font stack or exact radius have been decided — these remain open per Section 9.
+Built from the app's CONTEXT.md (workout creation, active-workout, and completion flows) and the dark-mode-only palette. The exact radius remains open per Section 9, while the font stack has been resolved to use Inter and Space Grotesk.
 
 ---
 *Companion to CONTEXT.md · September 2026*
