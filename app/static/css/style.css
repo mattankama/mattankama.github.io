@@ -12,6 +12,11 @@
     --color-elevated: #232830;
     --color-accent: #B87D4B;
 
+    /* Neumorphic Shadows */
+    --shadow-extrude: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-extrude-hover: -2px -2px 4px rgba(255, 255, 255, 0.05), 2px 2px 4px rgba(0, 0, 0, 0.4);
+    --shadow-inset: inset -3px -3px 6px rgba(255, 255, 255, 0.05), inset 3px 3px 6px rgba(0, 0, 0, 0.4);
+
     --space-unit: 8px;
     --space-micro: 4px;
     --touch-target-min: 44px;
@@ -35,7 +40,7 @@ html {
 }
 
 body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 400;
     color: var(--color-ink);
     background-color: var(--color-surface);
@@ -45,6 +50,7 @@ body {
 
 /* ---------- Typography scale (§3) ---------- */
 .timer-display {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 56px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -53,12 +59,14 @@ body {
 
 .stat-value,
 input[type="number"] {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 28px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
 
 h1, .exercise-title {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 20px;
     font-weight: 700;
 }
@@ -84,8 +92,8 @@ h1, .exercise-title {
     justify-content: center;
     padding: calc(var(--space-unit) * 2) var(--space-unit);
     background-color: var(--color-elevated);
-    border-bottom: 1px solid var(--color-muted);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    border: none;
+    box-shadow: var(--shadow-extrude);
     color: var(--color-structure);
     transition: color var(--motion-duration) ease;
 }
@@ -103,9 +111,10 @@ h1, .exercise-title {
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    border: 2px solid var(--color-accent);
-    background-color: var(--color-elevated);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border: none;
+    background-color: var(--color-accent);
+    color: var(--color-surface);
+    box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.2), 4px 4px 8px rgba(0, 0, 0, 0.5);
     font-size: 28px;
     line-height: 1;
     cursor: pointer;
@@ -118,12 +127,11 @@ h1, .exercise-title {
 }
 
 .fab-complete:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.2), 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .fab-complete:active {
-    transform: scale(0.95);
+    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.2), inset 3px 3px 6px rgba(0, 0, 0, 0.5);
 }
 
 .fab-complete:disabled {
@@ -140,67 +148,53 @@ h1, .exercise-title {
     min-height: var(--touch-target-min);
     min-width: var(--touch-target-min);
     padding: calc(var(--space-unit) * 1.5) calc(var(--space-unit) * 3);
-    border: 1px solid var(--color-muted);
+    border: none;
     border-radius: var(--radius);
-    background: var(--color-elevated);
+    background-color: var(--color-elevated);
     color: var(--color-ink);
+    box-shadow: var(--shadow-extrude);
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    transition: opacity var(--motion-duration) ease,
-                border-color var(--motion-duration) ease;
+    transition: box-shadow var(--motion-duration) ease,
+                color var(--motion-duration) ease;
 }
 
 .btn:active {
-    opacity: 0.7;
+    box-shadow: var(--shadow-inset);
 }
 
 .btn:hover {
-    border-color: var(--color-structure);
+    box-shadow: var(--shadow-extrude-hover);
+    color: var(--color-ink);
 }
 
 .btn-accent {
     background-color: var(--color-accent);
     color: var(--color-surface);
-    border-color: var(--color-accent);
+    box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.2), 4px 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .btn-accent:hover {
-    border-color: var(--color-accent);
-    opacity: 0.9;
+    box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.2), 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.btn-secondary {
-    border-color: var(--color-structure);
-    color: var(--color-structure);
-    background: transparent;
+.btn-accent:active {
+    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.2), inset 3px 3px 6px rgba(0, 0, 0, 0.5);
 }
 
-.btn-secondary:hover {
-    color: var(--color-ink);
-    border-color: var(--color-ink);
-}
-
+.btn-secondary,
 .btn-muted {
-    border-color: var(--color-muted);
+    background-color: var(--color-elevated);
     color: var(--color-structure);
-    background: transparent;
 }
-
-.btn-muted:hover {
-    border-color: var(--color-structure);
-}
-
-
 
 .btn-danger {
-    border-color: var(--color-structure);
+    background-color: var(--color-elevated);
     color: var(--color-structure);
-    background: transparent;
 }
 
 .btn-danger:hover {
-    border-color: var(--color-accent);
     color: var(--color-accent);
 }
 
@@ -231,17 +225,18 @@ input[type="text"] {
     font-size: 16px;
     font-weight: 400;
     color: var(--color-ink);
-    background-color: var(--color-elevated);
-    border: 1px solid var(--color-muted);
+    background-color: var(--color-surface);
+    border: none;
     border-radius: var(--radius);
+    box-shadow: var(--shadow-inset);
     outline: none;
-    transition: border-color var(--motion-duration) ease;
+    transition: box-shadow var(--motion-duration) ease;
 }
 
 .form-input:focus,
 input[type="text"]:focus,
 input[type="number"]:focus {
-    border-color: var(--color-accent);
+    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.05), inset 3px 3px 6px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--color-accent);
 }
 
 input[type="number"] {
@@ -250,14 +245,15 @@ input[type="number"] {
     padding: var(--space-micro) var(--space-unit);
     font-family: inherit;
     color: var(--color-ink);
-    background-color: var(--color-elevated);
-    border: 1px solid var(--color-muted);
+    background-color: var(--color-surface);
+    border: none;
     border-radius: var(--radius);
+    box-shadow: var(--shadow-inset);
     outline: none;
     text-align: center;
     -moz-appearance: textfield;
     appearance: textfield;
-    transition: border-color var(--motion-duration) ease;
+    transition: box-shadow var(--motion-duration) ease;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -292,20 +288,21 @@ input[type="number"]::-webkit-outer-spin-button {
     font-size: 14px;
     font-weight: 400;
     color: var(--color-ink);
-    background-color: var(--color-elevated);
-    border: 1px solid var(--color-muted);
+    background-color: var(--color-surface);
+    border: none;
+    box-shadow: var(--shadow-inset);
     border-radius: var(--radius);
     cursor: pointer;
     user-select: none;
-    transition: border-color var(--motion-duration) ease;
+    transition: box-shadow var(--motion-duration) ease;
 }
 
 .custom-select-trigger:hover {
-    border-color: var(--color-structure);
+    box-shadow: inset -2px -2px 4px rgba(255, 255, 255, 0.05), inset 2px 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .custom-select.open .custom-select-trigger {
-    border-color: var(--color-accent);
+    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.05), inset 3px 3px 6px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--color-accent);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 }
@@ -335,13 +332,12 @@ input[type="number"]::-webkit-outer-spin-button {
     left: 0;
     right: 0;
     z-index: 60;
-    background-color: var(--color-elevated);
-    border: 1px solid var(--color-accent);
-    border-top: none;
+    background-color: var(--color-surface);
+    border: none;
     border-radius: 0 0 var(--radius) var(--radius);
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-extrude);
     display: none;
 }
 
@@ -393,6 +389,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .home-title {
     font-size: 28px;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .routines-list {
@@ -407,12 +404,13 @@ input[type="number"]::-webkit-outer-spin-button {
     margin-bottom: var(--space-unit);
     background-color: var(--color-elevated);
     border-radius: var(--radius);
-    border: 1px solid var(--color-muted);
-    transition: border-color var(--motion-duration) ease;
+    border: none;
+    box-shadow: var(--shadow-extrude);
+    transition: box-shadow var(--motion-duration) ease;
 }
 
 .routine-card:hover {
-    border-color: var(--color-structure);
+    box-shadow: var(--shadow-extrude-hover);
 }
 
 .routine-card-info {
@@ -473,6 +471,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .page-title {
     font-size: 24px;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .exercise-list {
@@ -538,14 +537,13 @@ input[type="number"]::-webkit-outer-spin-button {
     left: 0;
     right: 0;
     z-index: 50;
-    background: var(--color-elevated);
-    border: 1px solid var(--color-accent);
-    border-top: none;
+    background: var(--color-surface);
+    border: none;
     border-radius: 0 0 var(--radius) var(--radius);
     max-height: 200px;
     overflow-y: auto;
     display: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-extrude);
 }
 
 .autocomplete-list.show {
@@ -571,6 +569,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .session-title {
     font-size: 24px;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .entry-block {
@@ -681,10 +680,11 @@ select {
     font-size: 14px;
     font-weight: 400;
     color: var(--color-ink);
-    background-color: var(--color-elevated);
-    border: 1px solid var(--color-muted);
+    background-color: var(--color-surface);
+    border: none;
+    box-shadow: var(--shadow-inset);
     border-radius: var(--radius);
     outline: none;
-    transition: border-color var(--motion-duration) ease;
+    transition: box-shadow var(--motion-duration) ease;
     display: none; /* Hidden by default — custom dropdown replaces it */
 }
