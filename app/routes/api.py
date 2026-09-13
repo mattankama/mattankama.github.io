@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, abort, jsonify, make_response, request
 
 from app import db
 from app.models import (
@@ -14,6 +14,14 @@ from app.models import (
 )
 
 api_bp = Blueprint("api", __name__)
+
+
+def get_or_404_json(model, ident, error_message):
+    """Get an entity by ID or abort with a 404 JSON response."""
+    entity = db.session.get(model, ident)
+    if not entity:
+        abort(make_response(jsonify({"error": error_message}), 404))
+    return entity
 
 
 # ---------------------------------------------------------------------------
@@ -49,9 +57,7 @@ def create_exercise():
 @api_bp.route("/exercises/<int:exercise_id>", methods=["DELETE"])
 def delete_exercise(exercise_id):
     """Delete an exercise and all its machines."""
-    exercise = db.session.get(Exercise, exercise_id)
-    if not exercise:
-        return jsonify({"error": "Exercise not found"}), 404
+    exercise = get_or_404_json(Exercise, exercise_id, "Exercise not found")
     db.session.delete(exercise)
     db.session.commit()
     return "", 204
@@ -65,9 +71,7 @@ def delete_exercise(exercise_id):
 @api_bp.route("/exercises/<int:exercise_id>/machines", methods=["POST"])
 def create_machine(exercise_id):
     """Add a machine to an exercise."""
-    exercise = db.session.get(Exercise, exercise_id)
-    if not exercise:
-        return jsonify({"error": "Exercise not found"}), 404
+    exercise = get_or_404_json(Exercise, exercise_id, "Exercise not found")
 
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
@@ -88,9 +92,7 @@ def create_machine(exercise_id):
 @api_bp.route("/machines/<int:machine_id>", methods=["DELETE"])
 def delete_machine(machine_id):
     """Delete a machine."""
-    machine = db.session.get(Machine, machine_id)
-    if not machine:
-        return jsonify({"error": "Machine not found"}), 404
+    machine = get_or_404_json(Machine, machine_id, "Machine not found")
     db.session.delete(machine)
     db.session.commit()
     return "", 204
@@ -99,9 +101,7 @@ def delete_machine(machine_id):
 @api_bp.route("/machines/<int:machine_id>/last-session", methods=["GET"])
 def get_machine_last_session(machine_id):
     """Get last session stats for a machine."""
-    machine = db.session.get(Machine, machine_id)
-    if not machine:
-        return jsonify({"error": "Machine not found"}), 404
+    machine = get_or_404_json(Machine, machine_id, "Machine not found")
     return jsonify({
         "machine_id": machine.id,
         "sets": machine.last_session_data or [],
@@ -168,18 +168,14 @@ def create_routine():
 @api_bp.route("/routines/<int:routine_id>", methods=["GET"])
 def get_routine(routine_id):
     """Get a routine with its exercises and machines."""
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = get_or_404_json(Routine, routine_id, "Routine not found")
     return jsonify(routine.to_dict())
 
 
 @api_bp.route("/routines/<int:routine_id>", methods=["PUT"])
 def update_routine(routine_id):
     """Update a routine's name and exercise list."""
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = get_or_404_json(Routine, routine_id, "Routine not found")
 
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
@@ -221,9 +217,7 @@ def update_routine(routine_id):
 @api_bp.route("/routines/<int:routine_id>", methods=["DELETE"])
 def delete_routine(routine_id):
     """Delete a routine definition only. Exercises, machines, stats, sessions untouched."""
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = get_or_404_json(Routine, routine_id, "Routine not found")
     db.session.delete(routine)
     db.session.commit()
     return "", 204
@@ -242,9 +236,7 @@ def start_session():
     if not routine_id:
         return jsonify({"error": "routine_id is required"}), 400
 
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = get_or_404_json(Routine, routine_id, "Routine not found")
 
     session = Session(routine_id=routine.id, routine_name=routine.name)
     db.session.add(session)
@@ -266,18 +258,14 @@ def start_session():
 @api_bp.route("/sessions/<int:session_id>", methods=["GET"])
 def get_session(session_id):
     """Get full session with entries and sets."""
-    session = db.session.get(Session, session_id)
-    if not session:
-        return jsonify({"error": "Session not found"}), 404
+    session = get_or_404_json(Session, session_id, "Session not found")
     return jsonify(session.to_dict())
 
 
 @api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
 def complete_session(session_id):
     """Complete a session. Updates each machine's lastSession with all sets."""
-    session = db.session.get(Session, session_id)
-    if not session:
-        return jsonify({"error": "Session not found"}), 404
+    session = get_or_404_json(Session, session_id, "Session not found")
 
     if session.status == "completed":
         return jsonify({"error": "Session already completed"}), 400
@@ -307,18 +295,14 @@ def complete_session(session_id):
 @api_bp.route("/session-entries/<int:entry_id>/machine", methods=["PUT"])
 def switch_entry_machine(entry_id):
     """Switch the machine for a session entry."""
-    entry = db.session.get(SessionEntry, entry_id)
-    if not entry:
-        return jsonify({"error": "Session entry not found"}), 404
+    entry = get_or_404_json(SessionEntry, entry_id, "Session entry not found")
 
     data = request.get_json(silent=True) or {}
     machine_id = data.get("machine_id")
     if not machine_id:
         return jsonify({"error": "machine_id is required"}), 400
 
-    machine = db.session.get(Machine, machine_id)
-    if not machine:
-        return jsonify({"error": "Machine not found"}), 404
+    machine = get_or_404_json(Machine, machine_id, "Machine not found")
 
     entry.machine_id = machine_id
     db.session.commit()
@@ -332,18 +316,14 @@ def switch_entry_machine(entry_id):
 @api_bp.route("/session-entries/<int:entry_id>/prefill", methods=["POST"])
 def prefill_entry(entry_id):
     """Assign machine to entry and auto-create sets from machine's lastSession."""
-    entry = db.session.get(SessionEntry, entry_id)
-    if not entry:
-        return jsonify({"error": "Session entry not found"}), 404
+    entry = get_or_404_json(SessionEntry, entry_id, "Session entry not found")
 
     data = request.get_json(silent=True) or {}
     machine_id = data.get("machine_id")
     if not machine_id:
         return jsonify({"error": "machine_id is required"}), 400
 
-    machine = db.session.get(Machine, machine_id)
-    if not machine:
-        return jsonify({"error": "Machine not found"}), 404
+    machine = get_or_404_json(Machine, machine_id, "Machine not found")
 
     entry.machine_id = machine_id
 
@@ -374,9 +354,7 @@ def prefill_entry(entry_id):
 @api_bp.route("/session-entries/<int:entry_id>/sets", methods=["POST"])
 def add_set(entry_id):
     """Add a new set to a session entry."""
-    entry = db.session.get(SessionEntry, entry_id)
-    if not entry:
-        return jsonify({"error": "Session entry not found"}), 404
+    entry = get_or_404_json(SessionEntry, entry_id, "Session entry not found")
 
     data = request.get_json(silent=True) or {}
     max_pos = db.session.query(db.func.max(SessionSet.position)).filter_by(entry_id=entry.id).scalar()
@@ -401,9 +379,7 @@ def add_set(entry_id):
 @api_bp.route("/session-sets/<int:set_id>", methods=["PUT"])
 def update_set(set_id):
     """Update a set's weight, reps, or completion status."""
-    s = db.session.get(SessionSet, set_id)
-    if not s:
-        return jsonify({"error": "Set not found"}), 404
+    s = get_or_404_json(SessionSet, set_id, "Set not found")
 
     data = request.get_json(silent=True) or {}
     if "weight" in data:
@@ -420,9 +396,7 @@ def update_set(set_id):
 @api_bp.route("/session-sets/<int:set_id>", methods=["DELETE"])
 def delete_set(set_id):
     """Remove a set."""
-    s = db.session.get(SessionSet, set_id)
-    if not s:
-        return jsonify({"error": "Set not found"}), 404
+    s = get_or_404_json(SessionSet, set_id, "Set not found")
     db.session.delete(s)
     db.session.commit()
     return "", 204
