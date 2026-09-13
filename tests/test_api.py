@@ -129,6 +129,16 @@ class TestRoutinesAPI:
         resp = client.post("/api/routines", json={})
         assert resp.status_code == 400
 
+    def test_create_routine_empty_exercise_name(self, client):
+        resp = client.post("/api/routines", json={
+            "name": "Push Day",
+            "exercises": [{"name": "  "}],
+        })
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert data["name"] == "Push Day"
+        assert len(data["exercises"]) == 0
+
     def test_create_routine_reuses_existing_exercise(self, client):
         client.post("/api/exercises", json={"name": "Bench Press"})
         resp = client.post("/api/routines", json={
