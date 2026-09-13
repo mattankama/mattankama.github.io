@@ -188,7 +188,7 @@ def get_routine(routine_id):
 @api_bp.route("/routines/<int:routine_id>", methods=["PUT"])
 def update_routine(routine_id):
     """Update a routine's name and exercise list."""
-    routine = get_or_404_json(Routine, routine_id, "Routine not found")
+    routine = _get_routine_or_404(routine_id)
 
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
@@ -212,7 +212,7 @@ def update_routine(routine_id):
 @api_bp.route("/routines/<int:routine_id>", methods=["DELETE"])
 def delete_routine(routine_id):
     """Delete a routine definition only. Exercises, machines, stats, sessions untouched."""
-    routine = get_or_404_json(Routine, routine_id, "Routine not found")
+    routine = _get_routine_or_404(routine_id)
     db.session.delete(routine)
     db.session.commit()
     return "", 204
@@ -239,7 +239,7 @@ def start_session():
     if not routine_id:
         return jsonify({"error": "routine_id is required"}), 400
 
-    routine = get_or_404_json(Routine, routine_id, "Routine not found")
+    routine = _get_routine_or_404(routine_id)
 
     session = Session(routine_id=routine.id, routine_name=routine.name)
     db.session.add(session)
