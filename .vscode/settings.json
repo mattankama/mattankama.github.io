@@ -1,0 +1,4 @@
+{
+    "python.defaultInterpreterPath": "/Users/mattankama/antigravity/rattlesnake/venv/bin/python3",
+    "python.analysis.extraPaths": ["/Users/mattankama/antigravity/rattlesnake"]
+}

@@ -1,2 +1,12 @@
 .DS_Store
 skills-lock.json
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.db
+instance/
+.pytest_cache/
+htmlcov/
+.coverage

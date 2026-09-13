@@ -3,7 +3,7 @@
 *Implementation Reference*
 
 > **Purpose**
-> A standalone visual reference for implementing the workout app described in CONTEXT.md. Use it for screen layout, component styling, and any future design or development work on the app. The interface should be as minimal as possible: bold, meaningful text carries the hierarchy, the five-color palette below is the only palette, and gradients, glassmorphism, and similar decorative effects are excluded by design.
+> A standalone visual reference for implementing the workout app described in CONTEXT.md. Use it for screen layout, component styling, and any future design or development work on the app. The interface is dark-mode-only and minimal: bold, meaningful text carries the hierarchy, the palette below is the only palette, and decorative effects are used sparingly — functional depth cues (micro-shadows on sticky elements, elevated input backgrounds) are permitted where they aid layer separation on a dark canvas.
 
 ## System at a glance
 
@@ -11,9 +11,9 @@
 |---|---|
 | **Visual character** | Minimal, direct, unadorned. Nothing on screen that isn't load-bearing. |
 | **Core approach** | Weight and size create hierarchy, not color or effects. Bold text marks what the user needs to read or act on; everything else recedes. |
-| **Palette** | Five fixed colors, defined in Section 2. One accent, used sparingly. |
+| **Palette** | Six fixed tokens (dark-mode-only), defined in Section 2. One accent, used sparingly. |
 | **Density** | Compact and thumb-friendly — built to be read and adjusted mid-set, often one-handed. |
-| **Surfaces** | Flat. No cards, no shadows, no blur, no gradients. |
+| **Surfaces** | Predominantly flat. Functional micro-shadows permitted on sticky elements for layer separation. No decorative shadows, blur, or gradients. |
 | **Motion** | Minimal; only where it explains a real state change (the timer, a logged set). |
 
 ## 1. Core visual principles
@@ -22,9 +22,9 @@
 
 **Bold means meaningful.** Bold weight is reserved for what the user is reading or editing right now: the exercise name, the current weight, the rep count, the timer. Labels, units, and metadata stay at a lighter weight so bold text is never competing with itself.
 
-**Hierarchy without decoration.** Gradients, glassmorphism, drop shadows, and neumorphic effects are not part of this system. Size, weight, spacing, and the single accent color do all the work that effects would otherwise be asked to do.
+**Hierarchy without decoration.** Gradients, glassmorphism, and neumorphic effects are not part of this system. Size, weight, spacing, and the single accent color do all the work that effects would otherwise be asked to do. Functional micro-shadows on sticky elements and subtle elevation on inputs are permitted — they aid layer separation on a dark surface, not decoration.
 
-**Flat by default.** No cards, no elevation, no containers, unless grouping content genuinely helps the user scan it faster.
+**Flat by default.** No cards, no elevation, no containers, unless grouping content genuinely helps the user scan it faster. Subtle tinted panels (using the Elevated token) are permitted for visual rhythm.
 
 **Built for the gym, not the pitch deck.** Sweaty hands, bad lighting, and glancing mid-set are the real usage conditions. Every choice should hold up there, not just in a mockup.
 
@@ -40,41 +40,25 @@
 
 ## 2. Color system
 
-**Rule:** every screen is built from the five colors below. Copper is the only accent, and it appears once per screen at most.
+**Rule:** the app is dark-mode-only. Every screen is built from the six tokens below. Copper is the only accent, and it appears once per screen at most. There is no light mode.
 
-### Base palette
+### Palette
 
 | Token | Value | Use |
 |---|---|---|
-| **Ink** | `#191D24` | Primary text. Every exercise name, weight, and rep count is set in Ink. |
-| **Structure** | `#523A34` | Secondary text, dividers, and the frame around sticky elements (timer bar, Complete Workout button). |
-| **Muted** | `#799496` | Inactive controls, placeholder text, quiet metadata like machine names and set counts. |
-| **Surface** | `#FFF8E8` | The background canvas. Nearly everything sits directly on Surface. |
+| **Surface** | `#191D24` | Background canvas (near-black). |
+| **Ink** | `#E8E7E4` | Primary text (soft white). Every exercise name, weight, and rep count is set in Ink. |
+| **Structure** | `#799496` | Secondary text, dividers, borders. |
+| **Muted** | `#4A5568` | Inactive controls, placeholder text, quiet metadata — darker than Structure, recedes on a dark background. |
+| **Elevated** | `#232830` | Subtle surface lift for sticky bars, input fields, and grouped panels. Never used as text. |
 | **Accent** | `#B87D4B` | The one deliberate highlight: a running timer, the Complete Workout button, a selected machine. |
 
 > **Color rules**
 > - Accent (Copper) appears at most once per screen — reserve it for the single most important action or state.
 > - Never blend, gradient, or tint between two palette colors; use each color flat and at full value.
-> - Structure and Muted are both quiet tones — use Structure where stronger separation is needed (dividers, sticky-element borders) and Muted where content should recede further (placeholders, disabled controls).
+> - Structure and Muted are both quiet tones — use Structure where stronger separation is needed (dividers, secondary text) and Muted where content should recede further (placeholders, disabled controls, inactive metadata).
 > - State (timer running, set completed, machine selected) should be legible from weight and position alone — color reinforces it, it doesn't carry it alone.
-
-### Dark mode
-
-**Rule:** dark mode uses the same five colors, remapped — never a sixth color, and never a naive full-palette invert.
-
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| **Surface** | `#FFF8E8` | `#191D24` | Background canvas. The palette's two extreme tones swap directly — they already sit at opposite ends of the lightness range, so the swap needs no new color. |
-| **Ink** | `#191D24` | `#FFF8E8` | Primary text. Same swap, reversed. |
-| **Structure** | `#523A34` | `#799496` | Secondary text and dividers. Deep Mocha doesn't have enough contrast against a dark background to stay legible, so Cool Steel takes over this role in dark mode. |
-| **Elevated** *(dark mode only)* | — | `#523A34` | Deep Mocha is repurposed as a flat fill for grouped panels and sticky-element separation — never as text. It replaces the contrast it can't provide as a readable color with a structural one instead. |
-| **Accent** | `#B87D4B` | `#B87D4B` | Unchanged. Copper reads clearly on both light and dark backgrounds. |
-
-> **Dark mode notes**
-> - Muted has no separate tone in dark mode — the fixed palette only supports one legible secondary tier against a dark background, not two. Use Structure's color for all secondary and placeholder text, and fall back to size or spacing (not a third color) if something needs to recede further.
-> - Don't simply invert every light-mode value — Structure's role changes color (Deep Mocha → Cool Steel) rather than just its target inverting, because the swap that works for Ink/Surface doesn't hold at Structure's contrast level.
-> - Accent stays Copper in both modes. Don't lighten or desaturate it for dark backgrounds — it was already chosen from a palette that includes a bright, warm mid-tone.
-> - Follow the system's light/dark setting by default; this app doesn't need its own in-app toggle unless requested later.
+> - Elevated provides subtle layer separation on the dark canvas — use it for sticky elements and input backgrounds, never for text.
 
 ## 3. Typography
 
@@ -117,10 +101,12 @@
 
 ## 5. Surfaces & layout anatomy
 
-- Every screen sits flat on Surface. No shadows, no blur, no translucency, no gradients — ever, not even subtle ones.
-- Sticky elements (timer bar, Complete Workout button) are separated from scrolling content with a single flat divider line in Structure, not a shadow or a blur.
+- Every screen sits flat on Surface. No blur, no translucency, no gradients — ever, not even subtle ones.
+- Sticky elements (timer bar, Complete Workout button) use an Elevated background with functional micro-shadows (`box-shadow: 0 1px 3px rgba(0,0,0,0.4)`) for layer separation.
+- Input fields and selects use an Elevated background with subtle shadows or borders to create a polished inset feel against the dark canvas.
 - Lists are the primary layout, not cards. An exercise and its sets form a flat, ordered list separated by hairlines.
-- If a container is ever needed, it's a flat Surface or Structure-bordered block — never a "card" with elevation.
+- Exercise entry blocks use a left accent border (`3px solid Structure`) with padding-left for visual rhythm as you scroll.
+- Routine panels on the home screen use an Elevated background with border-radius and optional micro-shadows for subtle grouping.
 
 ### Component notes
 
@@ -152,13 +138,13 @@
 - Gradients of any kind, on any surface or text.
 - Glassmorphism, frosted blur, or translucent panels.
 - Neumorphism or soft-embossed "pressed" shadows.
-- Drop shadows used decoratively rather than to separate a genuinely sticky element.
 - Oversized corner radii or an "everything is a pill" button style.
 - More than one accent color active on a single screen.
 - Decorative icons, multicolor icon packs, or icons used to fill empty space.
 - Confetti, "level up" language, streak badges, or other gamified celebration.
 - Skeleton-loading animations or spinners for changes that update instantly on-device.
-- Any color outside the five tokens defined in Section 2.
+- Any color outside the six tokens defined in Section 2.
+- Light mode or dual-mode theming — the app is dark-mode-only.
 
 ## 9. Open decisions
 
@@ -173,10 +159,11 @@
 
 | Reference token | Value | Meaning |
 |---|---|---|
-| `--color-ink` | `#191D24` | Primary text |
-| `--color-structure` | `#523A34` | Secondary text, dividers, sticky-element borders |
-| `--color-muted` | `#799496` | Inactive / placeholder / quiet metadata |
-| `--color-surface` | `#FFF8E8` | Background canvas |
+| `--color-surface` | `#191D24` | Background canvas (near-black) |
+| `--color-ink` | `#E8E7E4` | Primary text (soft white) |
+| `--color-structure` | `#799496` | Secondary text, dividers, borders |
+| `--color-muted` | `#4A5568` | Inactive / placeholder / quiet metadata |
+| `--color-elevated` | `#232830` | Sticky bars, input backgrounds, grouped panels |
 | `--color-accent` | `#B87D4B` | Single highlight: active timer, primary action, selected state |
 | `--space-unit` | 8 pt | Primary spacing rhythm |
 | `--space-micro` | 4 pt | Micro-spacing exception |
@@ -188,15 +175,16 @@
 - [ ] Is every bold element something the user needs to read or act on right now?
 - [ ] Does Accent appear at most once on this screen?
 - [ ] Could this screen be understood in grayscale?
-- [ ] Are the timer bar and Complete Workout button separated with a flat divider, not a shadow or blur?
-- [ ] Is there a gradient, blur, or shadow anywhere that isn't strictly functional? (If yes, remove it.)
+- [ ] Are sticky elements using Elevated background + micro-shadow for layer separation?
+- [ ] Is there a gradient, blur, or decorative shadow anywhere? (If yes, remove it.)
 - [ ] Are all touch targets at least 44 × 44 pt?
 - [ ] Does every icon have a text label nearby?
 - [ ] Is spacing built from the 8pt grid (4pt only for micro-spacing)?
+- [ ] Are all native `<select>` elements replaced with custom dropdowns matching the design system?
 
 ### Source scope
 
-Built from the app's CONTEXT.md (workout creation, active-workout, and completion flows) and the fixed five-color palette supplied for the project. No font stack, dark-mode values, or exact radius have been decided — these remain open per Section 9.
+Built from the app's CONTEXT.md (workout creation, active-workout, and completion flows) and the dark-mode-only palette. No font stack or exact radius have been decided — these remain open per Section 9.
 
 ---
 *Companion to CONTEXT.md · September 2026*

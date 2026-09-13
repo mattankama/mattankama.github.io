@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Rattlesnake{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <header class="home-header">
+        <h1 class="home-title">Rattlesnake</h1>
+    </header>
+
+    <div id="routines-list" class="routines-list">
+        <!-- Populated by JS -->
+    </div>
+
+    <div id="empty-state" class="empty-state" style="display: none;">
+        <p>No routines yet. Create one to get started.</p>
+    </div>
+
+    <div class="home-actions">
+        <a href="/routine/new" class="btn btn-accent" id="create-routine-btn">Create Routine</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

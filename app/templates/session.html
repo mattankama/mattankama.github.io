@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Session — Rattlesnake{% endblock %}
+
+{% block content %}
+<!-- Sticky timer bar (top anchor) -->
+<div class="timer-bar" id="timer-bar">
+    <span class="timer-display" id="timer-display">00:00</span>
+</div>
+
+<!-- Scrollable exercise list -->
+<div class="session-content" id="session-content">
+    <div class="session-header">
+        <h1 class="session-title" id="session-title">Session</h1>
+    </div>
+
+    <div id="entries-list" class="entries-list">
+        <!-- Populated by JS -->
+    </div>
+</div>
+
+<!-- Floating complete button (bottom-right) -->
+<button class="fab-complete" id="complete-session-btn" aria-label="Complete Session">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Flagpole -->
+        <line x1="6" y1="4" x2="6" y2="28" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="6" cy="3.5" r="1.75" fill="#FFFFFF"/>
+        <!-- White flag base -->
+        <rect x="7" y="6" width="20" height="15" fill="#FFFFFF"/>
+        <!-- Black checkers (4x3 grid, 5x5px each) -->
+        <rect x="7" y="6" width="5" height="5" fill="#000000"/>
+        <rect x="17" y="6" width="5" height="5" fill="#000000"/>
+        <rect x="12" y="11" width="5" height="5" fill="#000000"/>
+        <rect x="22" y="11" width="5" height="5" fill="#000000"/>
+        <rect x="7" y="16" width="5" height="5" fill="#000000"/>
+        <rect x="17" y="16" width="5" height="5" fill="#000000"/>
+        <!-- Outer white frame border -->
+        <rect x="7" y="6" width="20" height="15" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
+</button>
+
+<script>window.SESSION_ID = {{ session_id }};</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/session.js') }}"></script>
+{% endblock %}

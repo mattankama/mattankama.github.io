@@ -1,0 +1,428 @@
+from datetime import datetime, timezone
+
+from flask import Blueprint, jsonify, request
+
+from app import db
+from app.models import (
+    Exercise,
+    Machine,
+    Routine,
+    Session,
+    SessionEntry,
+    SessionSet,
+    routine_exercises,
+)
+
+api_bp = Blueprint("api", __name__)
+
+
+# ---------------------------------------------------------------------------
+# Exercises
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/exercises", methods=["GET"])
+def list_exercises():
+    """List all exercises with their machines."""
+    exercises = Exercise.query.order_by(Exercise.name).all()
+    return jsonify([e.to_dict() for e in exercises])
+
+
+@api_bp.route("/exercises", methods=["POST"])
+def create_exercise():
+    """Create an exercise. Idempotent: returns existing if name matches."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Exercise name is required"}), 400
+
+    existing = Exercise.query.filter(db.func.lower(Exercise.name) == name.lower()).first()
+    if existing:
+        return jsonify(existing.to_dict()), 200
+
+    exercise = Exercise(name=name)
+    db.session.add(exercise)
+    db.session.commit()
+    return jsonify(exercise.to_dict()), 201
+
+
+@api_bp.route("/exercises/<int:exercise_id>", methods=["DELETE"])
+def delete_exercise(exercise_id):
+    """Delete an exercise and all its machines."""
+    exercise = db.session.get(Exercise, exercise_id)
+    if not exercise:
+        return jsonify({"error": "Exercise not found"}), 404
+    db.session.delete(exercise)
+    db.session.commit()
+    return "", 204
+
+
+# ---------------------------------------------------------------------------
+# Machines
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/exercises/<int:exercise_id>/machines", methods=["POST"])
+def create_machine(exercise_id):
+    """Add a machine to an exercise."""
+    exercise = db.session.get(Exercise, exercise_id)
+    if not exercise:
+        return jsonify({"error": "Exercise not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Machine name is required"}), 400
+
+    # Check for duplicate
+    existing = Machine.query.filter_by(exercise_id=exercise_id, name=name).first()
+    if existing:
+        return jsonify(existing.to_dict()), 200
+
+    machine = Machine(exercise_id=exercise_id, name=name)
+    db.session.add(machine)
+    db.session.commit()
+    return jsonify(machine.to_dict()), 201
+
+
+@api_bp.route("/machines/<int:machine_id>", methods=["DELETE"])
+def delete_machine(machine_id):
+    """Delete a machine."""
+    machine = db.session.get(Machine, machine_id)
+    if not machine:
+        return jsonify({"error": "Machine not found"}), 404
+    db.session.delete(machine)
+    db.session.commit()
+    return "", 204
+
+
+@api_bp.route("/machines/<int:machine_id>/last-session", methods=["GET"])
+def get_machine_last_session(machine_id):
+    """Get last session stats for a machine."""
+    machine = db.session.get(Machine, machine_id)
+    if not machine:
+        return jsonify({"error": "Machine not found"}), 404
+    return jsonify({
+        "machine_id": machine.id,
+        "sets": machine.last_session_data or [],
+    })
+
+
+# ---------------------------------------------------------------------------
+# Routines
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/routines", methods=["GET"])
+def list_routines():
+    """List all routines."""
+    routines = Routine.query.order_by(Routine.created_at.desc()).all()
+    return jsonify([r.to_dict(include_exercises=False) for r in routines])
+
+
+@api_bp.route("/routines", methods=["POST"])
+def create_routine():
+    """Create a routine with exercises and optional machines.
+
+    Body: {"name": "...", "exercises": [{"name": "...", "machines": [{"name": "..."}]}]}
+    """
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Routine name is required"}), 400
+
+    routine = Routine(name=name)
+    db.session.add(routine)
+    db.session.flush()  # Get routine.id
+
+    exercises_data = data.get("exercises", [])
+    for i, ex_data in enumerate(exercises_data):
+        ex_name = (ex_data.get("name") or "").strip()
+        if not ex_name:
+            continue
+
+        # Find or create exercise
+        exercise = Exercise.query.filter(db.func.lower(Exercise.name) == ex_name.lower()).first()
+        if not exercise:
+            exercise = Exercise(name=ex_name)
+            db.session.add(exercise)
+            db.session.flush()
+
+        # Create machines if specified
+        for m_data in ex_data.get("machines", []):
+            m_name = (m_data.get("name") or "").strip()
+            if m_name and not Machine.query.filter_by(exercise_id=exercise.id, name=m_name).first():
+                db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+
+        # Link to routine
+        db.session.execute(
+            routine_exercises.insert().values(
+                routine_id=routine.id, exercise_id=exercise.id, position=i
+            )
+        )
+
+    db.session.commit()
+    return jsonify(routine.to_dict()), 201
+
+
+@api_bp.route("/routines/<int:routine_id>", methods=["GET"])
+def get_routine(routine_id):
+    """Get a routine with its exercises and machines."""
+    routine = db.session.get(Routine, routine_id)
+    if not routine:
+        return jsonify({"error": "Routine not found"}), 404
+    return jsonify(routine.to_dict())
+
+
+@api_bp.route("/routines/<int:routine_id>", methods=["PUT"])
+def update_routine(routine_id):
+    """Update a routine's name and exercise list."""
+    routine = db.session.get(Routine, routine_id)
+    if not routine:
+        return jsonify({"error": "Routine not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if name:
+        routine.name = name
+
+    if "exercises" in data:
+        # Clear existing associations
+        db.session.execute(
+            routine_exercises.delete().where(routine_exercises.c.routine_id == routine.id)
+        )
+
+        for i, ex_data in enumerate(data["exercises"]):
+            ex_name = (ex_data.get("name") or "").strip()
+            if not ex_name:
+                continue
+
+            exercise = Exercise.query.filter(db.func.lower(Exercise.name) == ex_name.lower()).first()
+            if not exercise:
+                exercise = Exercise(name=ex_name)
+                db.session.add(exercise)
+                db.session.flush()
+
+            for m_data in ex_data.get("machines", []):
+                m_name = (m_data.get("name") or "").strip()
+                if m_name and not Machine.query.filter_by(exercise_id=exercise.id, name=m_name).first():
+                    db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+
+            db.session.execute(
+                routine_exercises.insert().values(
+                    routine_id=routine.id, exercise_id=exercise.id, position=i
+                )
+            )
+
+    db.session.commit()
+    return jsonify(routine.to_dict())
+
+
+@api_bp.route("/routines/<int:routine_id>", methods=["DELETE"])
+def delete_routine(routine_id):
+    """Delete a routine definition only. Exercises, machines, stats, sessions untouched."""
+    routine = db.session.get(Routine, routine_id)
+    if not routine:
+        return jsonify({"error": "Routine not found"}), 404
+    db.session.delete(routine)
+    db.session.commit()
+    return "", 204
+
+
+# ---------------------------------------------------------------------------
+# Sessions
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/sessions", methods=["POST"])
+def start_session():
+    """Start a new session from a routine."""
+    data = request.get_json(silent=True) or {}
+    routine_id = data.get("routine_id")
+    if not routine_id:
+        return jsonify({"error": "routine_id is required"}), 400
+
+    routine = db.session.get(Routine, routine_id)
+    if not routine:
+        return jsonify({"error": "Routine not found"}), 404
+
+    session = Session(routine_id=routine.id, routine_name=routine.name)
+    db.session.add(session)
+    db.session.flush()
+
+    # Create an entry for each exercise in the routine
+    for i, exercise in enumerate(routine.exercises):
+        entry = SessionEntry(
+            session_id=session.id,
+            exercise_id=exercise.id,
+            position=i,
+        )
+        db.session.add(entry)
+
+    db.session.commit()
+    return jsonify(session.to_dict()), 201
+
+
+@api_bp.route("/sessions/<int:session_id>", methods=["GET"])
+def get_session(session_id):
+    """Get full session with entries and sets."""
+    session = db.session.get(Session, session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+    return jsonify(session.to_dict())
+
+
+@api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
+def complete_session(session_id):
+    """Complete a session. Updates each machine's lastSession with all sets."""
+    session = db.session.get(Session, session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+
+    if session.status == "completed":
+        return jsonify({"error": "Session already completed"}), 400
+
+    session.status = "completed"
+    session.completed_at = datetime.now(timezone.utc)
+
+    # Update lastSession for each machine used
+    for entry in session.entries:
+        if entry.machine_id and entry.sets:
+            machine = db.session.get(Machine, entry.machine_id)
+            if machine:
+                machine.last_session_data = [
+                    {"weight": s.weight, "reps": s.reps}
+                    for s in sorted(entry.sets, key=lambda s: s.position)
+                ]
+
+    db.session.commit()
+    return jsonify(session.to_dict())
+
+
+# ---------------------------------------------------------------------------
+# Session Entries
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/session-entries/<int:entry_id>/machine", methods=["PUT"])
+def switch_entry_machine(entry_id):
+    """Switch the machine for a session entry."""
+    entry = db.session.get(SessionEntry, entry_id)
+    if not entry:
+        return jsonify({"error": "Session entry not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    machine_id = data.get("machine_id")
+    if not machine_id:
+        return jsonify({"error": "machine_id is required"}), 400
+
+    machine = db.session.get(Machine, machine_id)
+    if not machine:
+        return jsonify({"error": "Machine not found"}), 404
+
+    entry.machine_id = machine_id
+    db.session.commit()
+
+    return jsonify({
+        "entry": entry.to_dict(),
+        "last_session": machine.last_session_data or [],
+    })
+
+
+@api_bp.route("/session-entries/<int:entry_id>/prefill", methods=["POST"])
+def prefill_entry(entry_id):
+    """Assign machine to entry and auto-create sets from machine's lastSession."""
+    entry = db.session.get(SessionEntry, entry_id)
+    if not entry:
+        return jsonify({"error": "Session entry not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    machine_id = data.get("machine_id")
+    if not machine_id:
+        return jsonify({"error": "machine_id is required"}), 400
+
+    machine = db.session.get(Machine, machine_id)
+    if not machine:
+        return jsonify({"error": "Machine not found"}), 404
+
+    entry.machine_id = machine_id
+
+    # Clear existing sets
+    SessionSet.query.filter_by(entry_id=entry.id).delete()
+
+    # Pre-fill from machine's last session, or create one empty set
+    last_data = machine.last_session_data or []
+    if last_data:
+        for i, set_data in enumerate(last_data):
+            s = SessionSet(
+                entry_id=entry.id,
+                weight=set_data.get("weight", 0),
+                reps=set_data.get("reps", 0),
+                position=i,
+            )
+            db.session.add(s)
+    else:
+        db.session.add(SessionSet(entry_id=entry.id, weight=0, reps=0, position=0))
+
+    db.session.commit()
+
+    # Refresh to get the new sets
+    db.session.refresh(entry)
+    return jsonify(entry.to_dict())
+
+
+@api_bp.route("/session-entries/<int:entry_id>/sets", methods=["POST"])
+def add_set(entry_id):
+    """Add a new set to a session entry."""
+    entry = db.session.get(SessionEntry, entry_id)
+    if not entry:
+        return jsonify({"error": "Session entry not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    max_pos = db.session.query(db.func.max(SessionSet.position)).filter_by(entry_id=entry.id).scalar()
+    position = (max_pos or 0) + 1 if max_pos is not None else 0
+
+    new_set = SessionSet(
+        entry_id=entry.id,
+        weight=data.get("weight", 0),
+        reps=data.get("reps", 0),
+        position=position,
+    )
+    db.session.add(new_set)
+    db.session.commit()
+    return jsonify(new_set.to_dict()), 201
+
+
+# ---------------------------------------------------------------------------
+# Session Sets
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/session-sets/<int:set_id>", methods=["PUT"])
+def update_set(set_id):
+    """Update a set's weight, reps, or completion status."""
+    s = db.session.get(SessionSet, set_id)
+    if not s:
+        return jsonify({"error": "Set not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    if "weight" in data:
+        s.weight = data["weight"]
+    if "reps" in data:
+        s.reps = data["reps"]
+    if "completed" in data:
+        s.completed = data["completed"]
+
+    db.session.commit()
+    return jsonify(s.to_dict())
+
+
+@api_bp.route("/session-sets/<int:set_id>", methods=["DELETE"])
+def delete_set(set_id):
+    """Remove a set."""
+    s = db.session.get(SessionSet, set_id)
+    if not s:
+        return jsonify({"error": "Set not found"}), 404
+    db.session.delete(s)
+    db.session.commit()
+    return "", 204
