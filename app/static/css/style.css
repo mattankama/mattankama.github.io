@@ -35,7 +35,7 @@ html {
 }
 
 body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 400;
     color: var(--color-ink);
     background-color: var(--color-surface);
@@ -45,6 +45,7 @@ body {
 
 /* ---------- Typography scale (§3) ---------- */
 .timer-display {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 56px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -53,12 +54,14 @@ body {
 
 .stat-value,
 input[type="number"] {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 28px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
 
 h1, .exercise-title {
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 20px;
     font-weight: 700;
 }
@@ -393,6 +396,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .home-title {
     font-size: 28px;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .routines-list {
@@ -473,6 +477,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .page-title {
     font-size: 24px;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .exercise-list {
@@ -571,6 +576,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .session-title {
     font-size: 24px;
+    font-family: 'Space Grotesk', sans-serif;
 }
 
 .entry-block {
