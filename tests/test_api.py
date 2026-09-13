@@ -97,6 +97,27 @@ class TestMachinesAPI:
         data = resp.get_json()
         assert data["sets"] == []
 
+    def test_get_last_session_with_data(self, client):
+        ex = client.post("/api/exercises", json={"name": "Chest Press"}).get_json()
+        m = client.post(f"/api/exercises/{ex['id']}/machines", json={"name": "Cybex"}).get_json()
+
+        # Manually set machine's last session data
+        from app.models import Machine as MachineModel
+        from app import db as _db
+        with client.application.app_context():
+            machine = _db.session.get(MachineModel, m["id"])
+            machine.last_session_data = [{"weight": 135, "reps": 10}, {"weight": 145, "reps": 8}]
+            _db.session.commit()
+
+        resp = client.get(f"/api/machines/{m['id']}/last-session")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert len(data["sets"]) == 2
+        assert data["sets"][0]["weight"] == 135
+        assert data["sets"][0]["reps"] == 10
+        assert data["sets"][1]["weight"] == 145
+        assert data["sets"][1]["reps"] == 8
+
     def test_get_last_session_not_found(self, client):
         resp = client.get("/api/machines/9999/last-session")
         assert resp.status_code == 404
