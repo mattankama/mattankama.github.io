@@ -178,6 +178,21 @@ class TestRoutinesAPI:
         assert data["name"] == "Push Day Updated"
         assert len(data["exercises"]) == 2
 
+    def test_update_routine_partial(self, client):
+        r = client.post("/api/routines", json={
+            "name": "Push Day",
+            "exercises": [{"name": "Bench Press"}],
+        }).get_json()
+
+        resp = client.put(f"/api/routines/{r['id']}", json={
+            "name": "Push Day Updated",
+        })
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["name"] == "Push Day Updated"
+        assert len(data["exercises"]) == 1
+        assert data["exercises"][0]["name"] == "Bench Press"
+
     def test_update_routine_not_found(self, client):
         resp = client.put("/api/routines/9999", json={"name": "X"})
         assert resp.status_code == 404
