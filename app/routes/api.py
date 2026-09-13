@@ -9,12 +9,12 @@ from app.models import (Exercise, Machine, Routine, Session, SessionEntry,
 api_bp = Blueprint("api", __name__)
 
 
-def get_or_404_json(model, ident, error_msg):
-    """Fetch a model by ID or abort with a JSON 404 response."""
-    obj = db.session.get(model, ident)
-    if not obj:
-        abort(make_response(jsonify({"error": error_msg}), 404))
-    return obj
+def get_or_404_json(model, ident, error_message):
+    """Get an entity by ID or abort with a 404 JSON response."""
+    entity = db.session.get(model, ident)
+    if not entity:
+        abort(make_response(jsonify({"error": error_message}), 404))
+    return entity
 
 
 # ---------------------------------------------------------------------------
@@ -97,12 +97,10 @@ def delete_machine(machine_id):
 def get_machine_last_session(machine_id):
     """Get last session stats for a machine."""
     machine = get_or_404_json(Machine, machine_id, "Machine not found")
-    return jsonify(
-        {
-            "machine_id": machine.id,
-            "sets": machine.last_session_data or [],
-        }
-    )
+    return jsonify({
+        "machine_id": machine.id,
+        "sets": machine.last_session_data or [],
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -133,30 +131,42 @@ def create_routine():
     db.session.flush()  # Get routine.id
 
     exercises_data = data.get("exercises", [])
+
+    # Pre-fetch existing exercises to avoid N+1 query
+    ex_names = [
+        (ex_data.get("name") or "").strip()
+        for ex_data in exercises_data
+        if (ex_data.get("name") or "").strip()
+    ]
+    existing_exercises = {}
+    if ex_names:
+        ex_names_lower = [name.lower() for name in ex_names]
+        exercises = Exercise.query.filter(db.func.lower(Exercise.name).in_(ex_names_lower)).all()
+        for ex in exercises:
+            existing_exercises[ex.name.lower()] = ex
+
     for i, ex_data in enumerate(exercises_data):
         ex_name = (ex_data.get("name") or "").strip()
         if not ex_name:
             continue
 
+        ex_name_lower = ex_name.lower()
+
         # Find or create exercise
-        exercise = Exercise.query.filter(
-            db.func.lower(Exercise.name) == ex_name.lower()
-        ).first()
+        exercise = existing_exercises.get(ex_name_lower)
         if not exercise:
             exercise = Exercise(name=ex_name)
             db.session.add(exercise)
             db.session.flush()
+            existing_exercises[ex_name_lower] = exercise
 
         # Create machines if specified
+        existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
         for m_data in ex_data.get("machines", []):
             m_name = (m_data.get("name") or "").strip()
-            if (
-                m_name
-                and not Machine.query.filter_by(
-                    exercise_id=exercise.id, name=m_name
-                ).first()
-            ):
+            if m_name and m_name not in existing_machines:
                 db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+                existing_machines.add(m_name)
 
         # Link to routine
         db.session.execute(
@@ -194,28 +204,41 @@ def update_routine(routine_id):
             )
         )
 
-        for i, ex_data in enumerate(data["exercises"]):
+        exercises_data = data["exercises"]
+
+        # Pre-fetch existing exercises to avoid N+1 query
+        ex_names = [
+            (ex_data.get("name") or "").strip()
+            for ex_data in exercises_data
+            if (ex_data.get("name") or "").strip()
+        ]
+        existing_exercises = {}
+        if ex_names:
+            ex_names_lower = [name.lower() for name in ex_names]
+            exercises = Exercise.query.filter(db.func.lower(Exercise.name).in_(ex_names_lower)).all()
+            for ex in exercises:
+                existing_exercises[ex.name.lower()] = ex
+
+        for i, ex_data in enumerate(exercises_data):
             ex_name = (ex_data.get("name") or "").strip()
             if not ex_name:
                 continue
 
-            exercise = Exercise.query.filter(
-                db.func.lower(Exercise.name) == ex_name.lower()
-            ).first()
+            ex_name_lower = ex_name.lower()
+
+            exercise = existing_exercises.get(ex_name_lower)
             if not exercise:
                 exercise = Exercise(name=ex_name)
                 db.session.add(exercise)
                 db.session.flush()
+                existing_exercises[ex_name_lower] = exercise
 
+            existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
             for m_data in ex_data.get("machines", []):
                 m_name = (m_data.get("name") or "").strip()
-                if (
-                    m_name
-                    and not Machine.query.filter_by(
-                        exercise_id=exercise.id, name=m_name
-                    ).first()
-                ):
+                if m_name and m_name not in existing_machines:
                     db.session.add(Machine(exercise_id=exercise.id, name=m_name))
+                    existing_machines.add(m_name)
 
             db.session.execute(
                 routine_exercises.insert().values(
@@ -275,6 +298,25 @@ def get_session(session_id):
     return jsonify(session.to_dict())
 
 
+def update_machine_stats(session):
+    """Update last_session_data for all machines used in this session."""
+    machine_ids = {entry.machine_id for entry in session.entries if entry.machine_id and entry.sets}
+    if not machine_ids:
+        return
+
+    machines = db.session.query(Machine).filter(Machine.id.in_(machine_ids)).all()
+    machine_map = {m.id: m for m in machines}
+
+    for entry in session.entries:
+        if entry.machine_id and entry.sets:
+            machine = machine_map.get(entry.machine_id)
+            if machine:
+                machine.last_session_data = [
+                    {"weight": s.weight, "reps": s.reps}
+                    for s in sorted(entry.sets, key=lambda s: s.position)
+                ]
+
+
 @api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
 def complete_session(session_id):
     """Complete a session. Updates each machine's lastSession with all sets."""
@@ -286,15 +328,7 @@ def complete_session(session_id):
     session.status = "completed"
     session.completed_at = datetime.now(timezone.utc)
 
-    # Update lastSession for each machine used
-    for entry in session.entries:
-        if entry.machine_id and entry.sets:
-            machine = db.session.get(Machine, entry.machine_id)
-            if machine:
-                machine.last_session_data = [
-                    {"weight": s.weight, "reps": s.reps}
-                    for s in sorted(entry.sets, key=lambda s: s.position)
-                ]
+    update_machine_stats(session)
 
     db.session.commit()
     return jsonify(session.to_dict())
