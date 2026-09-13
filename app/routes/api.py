@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, abort, make_response
 
 from app import db
 from app.models import (
@@ -113,6 +113,14 @@ def get_machine_last_session(machine_id):
 # ---------------------------------------------------------------------------
 
 
+def _get_routine_or_404(routine_id):
+    """Helper to get a routine or abort with 404."""
+    routine = db.session.get(Routine, routine_id)
+    if not routine:
+        abort(make_response(jsonify({"error": "Routine not found"}), 404))
+    return routine
+
+
 @api_bp.route("/routines", methods=["GET"])
 def list_routines():
     """List all routines."""
@@ -168,18 +176,14 @@ def create_routine():
 @api_bp.route("/routines/<int:routine_id>", methods=["GET"])
 def get_routine(routine_id):
     """Get a routine with its exercises and machines."""
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = _get_routine_or_404(routine_id)
     return jsonify(routine.to_dict())
 
 
 @api_bp.route("/routines/<int:routine_id>", methods=["PUT"])
 def update_routine(routine_id):
     """Update a routine's name and exercise list."""
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = _get_routine_or_404(routine_id)
 
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
@@ -221,9 +225,7 @@ def update_routine(routine_id):
 @api_bp.route("/routines/<int:routine_id>", methods=["DELETE"])
 def delete_routine(routine_id):
     """Delete a routine definition only. Exercises, machines, stats, sessions untouched."""
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = _get_routine_or_404(routine_id)
     db.session.delete(routine)
     db.session.commit()
     return "", 204
@@ -242,9 +244,7 @@ def start_session():
     if not routine_id:
         return jsonify({"error": "routine_id is required"}), 400
 
-    routine = db.session.get(Routine, routine_id)
-    if not routine:
-        return jsonify({"error": "Routine not found"}), 404
+    routine = _get_routine_or_404(routine_id)
 
     session = Session(routine_id=routine.id, routine_name=routine.name)
     db.session.add(session)
