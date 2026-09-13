@@ -136,17 +136,34 @@ def create_routine():
     db.session.flush()  # Get routine.id
 
     exercises_data = data.get("exercises", [])
+
+    # Pre-fetch existing exercises to avoid N+1 query
+    ex_names = [
+        (ex_data.get("name") or "").strip()
+        for ex_data in exercises_data
+        if (ex_data.get("name") or "").strip()
+    ]
+    existing_exercises = {}
+    if ex_names:
+        ex_names_lower = [name.lower() for name in ex_names]
+        exercises = Exercise.query.filter(db.func.lower(Exercise.name).in_(ex_names_lower)).all()
+        for ex in exercises:
+            existing_exercises[ex.name.lower()] = ex
+
     for i, ex_data in enumerate(exercises_data):
         ex_name = (ex_data.get("name") or "").strip()
         if not ex_name:
             continue
 
+        ex_name_lower = ex_name.lower()
+
         # Find or create exercise
-        exercise = Exercise.query.filter(db.func.lower(Exercise.name) == ex_name.lower()).first()
+        exercise = existing_exercises.get(ex_name_lower)
         if not exercise:
             exercise = Exercise(name=ex_name)
             db.session.add(exercise)
             db.session.flush()
+            existing_exercises[ex_name_lower] = exercise
 
         # Create machines if specified
         existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
@@ -190,16 +207,34 @@ def update_routine(routine_id):
             routine_exercises.delete().where(routine_exercises.c.routine_id == routine.id)
         )
 
-        for i, ex_data in enumerate(data["exercises"]):
+        exercises_data = data["exercises"]
+
+        # Pre-fetch existing exercises to avoid N+1 query
+        ex_names = [
+            (ex_data.get("name") or "").strip()
+            for ex_data in exercises_data
+            if (ex_data.get("name") or "").strip()
+        ]
+        existing_exercises = {}
+        if ex_names:
+            ex_names_lower = [name.lower() for name in ex_names]
+            exercises = Exercise.query.filter(db.func.lower(Exercise.name).in_(ex_names_lower)).all()
+            for ex in exercises:
+                existing_exercises[ex.name.lower()] = ex
+
+        for i, ex_data in enumerate(exercises_data):
             ex_name = (ex_data.get("name") or "").strip()
             if not ex_name:
                 continue
 
-            exercise = Exercise.query.filter(db.func.lower(Exercise.name) == ex_name.lower()).first()
+            ex_name_lower = ex_name.lower()
+
+            exercise = existing_exercises.get(ex_name_lower)
             if not exercise:
                 exercise = Exercise(name=ex_name)
                 db.session.add(exercise)
                 db.session.flush()
+                existing_exercises[ex_name_lower] = exercise
 
             existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
             for m_data in ex_data.get("machines", []):
