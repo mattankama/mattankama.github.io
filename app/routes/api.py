@@ -108,43 +108,8 @@ def get_machine_last_session(machine_id):
 # ---------------------------------------------------------------------------
 
 
-@api_bp.route("/routines", methods=["GET"])
-def list_routines():
-    """List all routines."""
-    routines = Routine.query.order_by(Routine.created_at.desc()).all()
-    return jsonify([r.to_dict(include_exercises=False) for r in routines])
-
-
-@api_bp.route("/routines", methods=["POST"])
-def create_routine():
-    """Create a routine with exercises and optional machines.
-
-    Body: {"name": "...", "exercises": [{"name": "...", "machines": [{"name": "..."}]}]}
-    """
-    data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "").strip()
-    if not name:
-        return jsonify({"error": "Routine name is required"}), 400
-
-    routine = Routine(name=name)
-    db.session.add(routine)
-    db.session.flush()  # Get routine.id
-
-    exercises_data = data.get("exercises", [])
-
-    # Pre-fetch existing exercises to avoid N+1 query
-    ex_names = [
-        (ex_data.get("name") or "").strip()
-        for ex_data in exercises_data
-        if (ex_data.get("name") or "").strip()
-    ]
-    existing_exercises = {}
-    if ex_names:
-        ex_names_lower = [name.lower() for name in ex_names]
-        exercises = Exercise.query.filter(db.func.lower(Exercise.name).in_(ex_names_lower)).all()
-        for ex in exercises:
-            existing_exercises[ex.name.lower()] = ex
-
+def _add_exercises_to_routine(routine, exercises_data):
+    """Helper function to find/create exercises and associate them with a routine."""
     for i, ex_data in enumerate(exercises_data):
         ex_name = (ex_data.get("name") or "").strip()
         if not ex_name:
@@ -175,6 +140,32 @@ def create_routine():
             )
         )
 
+
+@api_bp.route("/routines", methods=["GET"])
+def list_routines():
+    """List all routines."""
+    routines = Routine.query.order_by(Routine.created_at.desc()).all()
+    return jsonify([r.to_dict(include_exercises=False) for r in routines])
+
+
+@api_bp.route("/routines", methods=["POST"])
+def create_routine():
+    """Create a routine with exercises and optional machines.
+
+    Body: {"name": "...", "exercises": [{"name": "...", "machines": [{"name": "..."}]}]}
+    """
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Routine name is required"}), 400
+
+    routine = Routine(name=name)
+    db.session.add(routine)
+    db.session.flush()  # Get routine.id
+
+    exercises_data = data.get("exercises", [])
+    _add_exercises_to_routine(routine, exercises_data)
+
     db.session.commit()
     return jsonify(routine.to_dict()), 201
 
@@ -204,47 +195,7 @@ def update_routine(routine_id):
             )
         )
 
-        exercises_data = data["exercises"]
-
-        # Pre-fetch existing exercises to avoid N+1 query
-        ex_names = [
-            (ex_data.get("name") or "").strip()
-            for ex_data in exercises_data
-            if (ex_data.get("name") or "").strip()
-        ]
-        existing_exercises = {}
-        if ex_names:
-            ex_names_lower = [name.lower() for name in ex_names]
-            exercises = Exercise.query.filter(db.func.lower(Exercise.name).in_(ex_names_lower)).all()
-            for ex in exercises:
-                existing_exercises[ex.name.lower()] = ex
-
-        for i, ex_data in enumerate(exercises_data):
-            ex_name = (ex_data.get("name") or "").strip()
-            if not ex_name:
-                continue
-
-            ex_name_lower = ex_name.lower()
-
-            exercise = existing_exercises.get(ex_name_lower)
-            if not exercise:
-                exercise = Exercise(name=ex_name)
-                db.session.add(exercise)
-                db.session.flush()
-                existing_exercises[ex_name_lower] = exercise
-
-            existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
-            for m_data in ex_data.get("machines", []):
-                m_name = (m_data.get("name") or "").strip()
-                if m_name and m_name not in existing_machines:
-                    db.session.add(Machine(exercise_id=exercise.id, name=m_name))
-                    existing_machines.add(m_name)
-
-            db.session.execute(
-                routine_exercises.insert().values(
-                    routine_id=routine.id, exercise_id=exercise.id, position=i
-                )
-            )
+        _add_exercises_to_routine(routine, data["exercises"])
 
     db.session.commit()
     return jsonify(routine.to_dict())
