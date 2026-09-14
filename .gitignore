@@ -11,3 +11,4 @@ instance/
 htmlcov/
 .coverage
 .vscode/
+flask_output.log
