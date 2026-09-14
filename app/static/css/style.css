@@ -968,7 +968,7 @@ body.timer-running .complete-bar .btn-accent {
 @media (max-width: 380px) {
     .sets-header,
     .set-row {
-        grid-template-columns: 22px minmax(0, 1.15fr) minmax(0, 1fr) 40px 46px;
+        grid-template-columns: 22px minmax(0, 1.15fr) minmax(0, 1fr) 44px 46px;
         gap: var(--s-1);
     }
 
@@ -981,7 +981,4 @@ body.timer-running .complete-bar .btn-accent {
         font-size: 26px;
     }
 
-    .set-toggle {
-        width: 40px;
-    }
 }
