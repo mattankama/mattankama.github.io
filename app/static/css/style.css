@@ -983,12 +983,12 @@ svg {
 
 .timer-shell {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: var(--s4);
     width: 100%;
     max-width: var(--shell);
-    padding: var(--s2) var(--s5) var(--s3);
+    padding: var(--s3) var(--s5);
     border-radius: var(--r-pill);
     background: var(--glass);
     -webkit-backdrop-filter: blur(28px) saturate(170%);
@@ -1295,13 +1295,6 @@ svg {
     font-weight: 600;
 }
 
-.set-times {
-    flex: 0 0 auto;
-    color: var(--ink-3);
-    font-size: var(--t-sm);
-    font-weight: 500;
-}
-
 /* The completion target is the largest thing you can hit in a row. */
 .set-toggle {
     flex: 0 0 auto;
@@ -1382,13 +1375,6 @@ svg {
 .entry-actions .btn:hover {
     background: var(--surface-2);
     color: var(--ink);
-}
-
-.sets-hint {
-    margin-top: var(--s5);
-    color: var(--ink-3);
-    font-size: var(--t-xs);
-    text-align: center;
 }
 
 /* --------------------------------------------------------------------------

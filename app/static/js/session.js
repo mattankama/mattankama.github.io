@@ -181,7 +181,6 @@ function renderSetsHTML(sets) {
                                data-field="weight">
                         <span class="set-unit" aria-hidden="true">lb</span>
                     </div>
-                    <span class="set-times" aria-hidden="true">&times;</span>
                     <div class="set-measure set-measure-reps">
                         <input type="number" class="set-input" inputmode="numeric" min="0"
                                value="${s.reps}" aria-label="Set ${i + 1} reps"
