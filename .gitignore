@@ -12,3 +12,7 @@ htmlcov/
 .coverage
 .vscode/
 flask_output.log
+
+# Claude Code — machine-local, never committed
+.claude/worktrees/
+.claude/settings.local.json
