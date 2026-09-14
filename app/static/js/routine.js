@@ -1,15 +1,19 @@
 /**
  * Rattlesnake — Routine editor logic
- * Dynamic exercise list, autocomplete, machine management, save.
+ * Dynamic exercise list, autocomplete, machine management, save, delete.
+ *
+ * Rows are built with DOM APIs rather than interpolated HTML strings: an
+ * exercise name containing an apostrophe used to break the inline handler,
+ * because the attribute-escaped &#39; decoded back to ' before JS parsed it.
  */
 
 let allExercises = [];
 let exerciseIndex = 0;
+let routineName = "";
 
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
-    // Load existing exercises for autocomplete
     try {
         allExercises = await fetchJSON("/api/exercises");
     } catch {
@@ -22,11 +26,18 @@ async function init() {
 
     document.getElementById("routine-form").addEventListener("submit", saveRoutine);
 
-    // If editing, pre-populate
+    const deleteBtn = document.getElementById("delete-routine-btn");
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", showDeleteConfirm);
+        document.getElementById("delete-cancel-btn")
+            .addEventListener("click", hideDeleteConfirm);
+        document.getElementById("delete-confirm-btn")
+            .addEventListener("click", deleteRoutine);
+    }
+
     if (window.ROUTINE_ID) {
         await loadRoutine(window.ROUTINE_ID);
     } else {
-        // Start with one empty exercise row
         addExerciseRow();
     }
 }
@@ -34,76 +45,130 @@ async function init() {
 async function loadRoutine(id) {
     try {
         const routine = await fetchJSON(`/api/routines/${id}`);
+        routineName = routine.name;
         document.getElementById("routine-name").value = routine.name;
+
+        const msg = document.getElementById("delete-confirm-message");
+        if (msg) {
+            msg.textContent = `Delete "${routine.name}"? This can't be undone.`;
+        }
 
         for (const exercise of routine.exercises) {
             addExerciseRow(exercise.name, exercise.machines || []);
         }
     } catch (err) {
-        console.error("Failed to load routine:", err);
+        showError(
+            document.querySelector(".routine-container"),
+            `Could not load this routine: ${err.message}`
+        );
     }
 }
+
+// ---------------------------------------------------------------------------
+// Exercise rows
+// ---------------------------------------------------------------------------
 
 function addExerciseRow(name = "", machines = []) {
     const list = document.getElementById("exercise-list");
     const idx = exerciseIndex++;
+
     const row = document.createElement("div");
     row.className = "exercise-row";
     row.dataset.idx = idx;
 
-    row.innerHTML = `
-        <div class="exercise-row-header">
-            <div class="autocomplete-wrapper">
-                <input type="text"
-                       class="form-input exercise-name-input"
-                       placeholder="Exercise name"
-                       value="${escapeAttr(name)}"
-                       data-idx="${idx}"
-                       autocomplete="off">
-                <div class="autocomplete-list" id="autocomplete-${idx}"></div>
-            </div>
-            <button type="button" class="btn btn-danger btn-small" onclick="removeExerciseRow(${idx})">×</button>
-        </div>
-        <div class="machine-list" id="machines-${idx}">
-        </div>
-        <button type="button" class="btn btn-muted btn-small" onclick="addMachineRow(${idx})">+ Machine</button>
-    `;
+    // Header: name input + autocomplete + remove
+    const header = document.createElement("div");
+    header.className = "exercise-row-header";
 
+    const wrapper = document.createElement("div");
+    wrapper.className = "autocomplete-wrapper";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-input exercise-name-input";
+    input.placeholder = "Exercise name";
+    // Placeholders are Muted per §2, so they are decorative only; every field
+    // carries its own accessible name.
+    input.setAttribute("aria-label", "Exercise name");
+    input.autocomplete = "off";
+    input.dataset.idx = idx;
+    input.value = name;
+
+    const acList = document.createElement("div");
+    acList.className = "autocomplete-list";
+    acList.id = `autocomplete-${idx}`;
+
+    wrapper.append(input, acList);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-text";
+    removeBtn.textContent = "Remove";
+    removeBtn.setAttribute("aria-label", "Remove exercise");
+    removeBtn.addEventListener("click", () => row.remove());
+
+    header.append(wrapper, removeBtn);
+
+    // Machines, visibly nested under their exercise
+    const machineGroup = document.createElement("div");
+    machineGroup.className = "machine-group";
+
+    const machineLabel = document.createElement("span");
+    machineLabel.className = "field-label";
+    machineLabel.textContent = "Machines";
+
+    const machineList = document.createElement("div");
+    machineList.className = "machine-list";
+    machineList.id = `machines-${idx}`;
+
+    const addMachineBtn = document.createElement("button");
+    addMachineBtn.type = "button";
+    addMachineBtn.className = "btn btn-muted btn-small";
+    addMachineBtn.textContent = "+ Machine";
+    addMachineBtn.addEventListener("click", () => addMachineRow(idx));
+
+    machineGroup.append(machineLabel, machineList, addMachineBtn);
+    row.append(header, machineGroup);
     list.appendChild(row);
 
-    // Add existing machines
     for (const m of machines) {
         addMachineRow(idx, m.name);
     }
 
-    // Setup autocomplete
-    const input = row.querySelector(".exercise-name-input");
     input.addEventListener("input", () => handleAutocomplete(input, idx));
     input.addEventListener("focus", () => handleAutocomplete(input, idx));
     input.addEventListener("blur", () => {
-        // Delay to allow click on autocomplete item
-        setTimeout(() => {
-            const acList = document.getElementById(`autocomplete-${idx}`);
-            if (acList) acList.classList.remove("show");
-        }, 200);
+        // delay so a click on an autocomplete item still registers
+        setTimeout(() => acList.classList.remove("show"), 200);
     });
-}
-
-function removeExerciseRow(idx) {
-    const row = document.querySelector(`.exercise-row[data-idx="${idx}"]`);
-    if (row) row.remove();
 }
 
 function addMachineRow(exerciseIdx, name = "") {
     const container = document.getElementById(`machines-${exerciseIdx}`);
     const row = document.createElement("div");
     row.className = "machine-row";
-    row.innerHTML = `
-        <input type="text" class="machine-name-input" placeholder="Machine name" value="${escapeAttr(name)}">
-        <button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove()">×</button>
-    `;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "machine-name-input";
+    input.placeholder = "Machine name";
+    input.setAttribute("aria-label", "Machine name");
+    input.value = name;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-text";
+    removeBtn.textContent = "Remove";
+    removeBtn.setAttribute("aria-label", "Remove machine");
+    removeBtn.addEventListener("click", () => row.remove());
+
+    row.append(input, removeBtn);
     container.appendChild(row);
 }
+
+// ---------------------------------------------------------------------------
+// Autocomplete
+// ---------------------------------------------------------------------------
 
 function handleAutocomplete(input, idx) {
     const query = input.value.trim().toLowerCase();
@@ -123,12 +188,19 @@ function handleAutocomplete(input, idx) {
         return;
     }
 
-    acList.innerHTML = matches
-        .map(
-            (e) =>
-                `<div class="autocomplete-item" onmousedown="selectAutocomplete(${idx}, '${escapeAttr(e.name)}')">${escapeHTML(e.name)}</div>`
-        )
-        .join("");
+    acList.innerHTML = "";
+    for (const exercise of matches) {
+        const item = document.createElement("div");
+        item.className = "autocomplete-item";
+        item.setAttribute("role", "option");
+        item.textContent = exercise.name;
+        // mousedown fires before blur, so the suggestion survives the blur handler
+        item.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            selectAutocomplete(idx, exercise.name);
+        });
+        acList.appendChild(item);
+    }
     acList.classList.add("show");
 }
 
@@ -137,43 +209,41 @@ function selectAutocomplete(idx, name) {
     const input = row.querySelector(".exercise-name-input");
     input.value = name;
 
-    const acList = document.getElementById(`autocomplete-${idx}`);
-    acList.classList.remove("show");
+    document.getElementById(`autocomplete-${idx}`).classList.remove("show");
 
-    // Load machines for this exercise
     const exercise = allExercises.find(
         (e) => e.name.toLowerCase() === name.toLowerCase()
     );
     if (exercise && exercise.machines && exercise.machines.length > 0) {
-        const machineContainer = document.getElementById(`machines-${idx}`);
-        machineContainer.innerHTML = "";
+        document.getElementById(`machines-${idx}`).innerHTML = "";
         for (const m of exercise.machines) {
             addMachineRow(idx, m.name);
         }
     }
 }
 
+// ---------------------------------------------------------------------------
+// Save
+// ---------------------------------------------------------------------------
+
 async function saveRoutine(e) {
     e.preventDefault();
 
+    const container = document.querySelector(".routine-container");
     const nameInput = document.getElementById("routine-name");
     const name = nameInput.value.trim();
     if (!name) {
-        // Focus the empty field instead of showing an alert
         nameInput.focus();
         return;
     }
 
-    const exerciseRows = document.querySelectorAll(".exercise-row");
     const exercises = [];
-
-    for (const row of exerciseRows) {
+    for (const row of document.querySelectorAll(".exercise-row")) {
         const exName = row.querySelector(".exercise-name-input").value.trim();
         if (!exName) continue;
 
         const machines = [];
-        const machineInputs = row.querySelectorAll(".machine-name-input");
-        for (const mi of machineInputs) {
+        for (const mi of row.querySelectorAll(".machine-name-input")) {
             const mName = mi.value.trim();
             if (mName) machines.push({ name: mName });
         }
@@ -182,6 +252,8 @@ async function saveRoutine(e) {
     }
 
     const payload = { name, exercises };
+    const saveBtn = document.getElementById("save-routine-btn");
+    saveBtn.disabled = true;
 
     try {
         if (window.ROUTINE_ID) {
@@ -197,16 +269,39 @@ async function saveRoutine(e) {
         }
         window.location.href = "/";
     } catch (err) {
-        console.error("Failed to save routine:", err);
+        saveBtn.disabled = false;
+        showError(container, `Could not save this routine: ${err.message}`);
     }
 }
 
-function escapeHTML(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+// ---------------------------------------------------------------------------
+// Delete — in-page confirm, never a native confirm() dialog
+// ---------------------------------------------------------------------------
+
+function showDeleteConfirm() {
+    document.getElementById("delete-routine-btn").style.display = "none";
+    document.getElementById("delete-confirm").style.display = "block";
+    document.getElementById("delete-cancel-btn").focus();
 }
 
-function escapeAttr(str) {
-    return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function hideDeleteConfirm() {
+    document.getElementById("delete-confirm").style.display = "none";
+    const btn = document.getElementById("delete-routine-btn");
+    btn.style.display = "";
+    btn.focus();
+}
+
+async function deleteRoutine() {
+    const container = document.querySelector(".routine-container");
+    const btn = document.getElementById("delete-confirm-btn");
+    btn.disabled = true;
+
+    try {
+        await fetchJSON(`/api/routines/${window.ROUTINE_ID}`, { method: "DELETE" });
+        window.location.href = "/";
+    } catch (err) {
+        btn.disabled = false;
+        hideDeleteConfirm();
+        showError(container, `Could not delete this routine: ${err.message}`);
+    }
 }

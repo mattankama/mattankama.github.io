@@ -34,7 +34,44 @@ async function fetchJSON(url, options = {}) {
 }
 
 /**
- * Custom dropdown component — replaces native <select>.
+ * Escape a string for safe insertion as HTML text content.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+}
+
+/**
+ * Surface a failure the user can actually see. A silent console.error looks
+ * identical to "nothing happened" (§1).
+ * @param {HTMLElement} container — element to prepend the message to
+ * @param {string} message
+ */
+function showError(container, message) {
+    if (!container) return;
+    clearError(container);
+    const box = document.createElement("div");
+    box.className = "inline-error";
+    box.setAttribute("role", "alert");
+    box.textContent = message;
+    container.prepend(box);
+}
+
+/**
+ * Remove any error message previously shown in this container.
+ * @param {HTMLElement} container
+ */
+function clearError(container) {
+    if (!container) return;
+    const existing = container.querySelector(":scope > .inline-error");
+    if (existing) existing.remove();
+}
+
+/**
+ * Custom dropdown component — replaces native <select> (§10 checklist).
  * Usage:
  *   const dropdown = new CustomSelect(container, {
  *       placeholder: 'Select machine',
@@ -59,8 +96,10 @@ class CustomSelect {
         this.isOpen = false;
         this.selectedValue = config.selectedValue || "";
         this.options = config.options || [];
+        this.activeIndex = -1;
+        this.uid = config.id || `cs-${CustomSelect._seq++}`;
         this.render();
-        this._bindOutsideClick();
+        CustomSelect._register(this);
     }
 
     render() {
@@ -70,58 +109,51 @@ class CustomSelect {
             this.container.id = this.config.id;
         }
 
-        // Trigger button
+        const listboxId = `${this.uid}-listbox`;
+
+        // Trigger
         const trigger = document.createElement("div");
         trigger.className = "custom-select-trigger";
         trigger.setAttribute("role", "combobox");
         trigger.setAttribute("tabindex", "0");
+        trigger.setAttribute("aria-haspopup", "listbox");
+        trigger.setAttribute("aria-expanded", "false");
+        trigger.setAttribute("aria-controls", listboxId);
 
-        const selectedOption = this.options.find(
-            (o) => o.value === this.selectedValue && !o.isAction
-        );
         const labelSpan = document.createElement("span");
-        if (selectedOption) {
-            labelSpan.textContent = selectedOption.label;
-        } else {
-            labelSpan.textContent = this.config.placeholder || "Select...";
-            labelSpan.className = "placeholder";
-        }
+        labelSpan.className = "label";
+        trigger.appendChild(labelSpan);
 
         const arrow = document.createElement("span");
         arrow.className = "arrow";
-
-        trigger.appendChild(labelSpan);
         trigger.appendChild(arrow);
 
         trigger.addEventListener("click", (e) => {
             e.stopPropagation();
             this.toggle();
         });
-
-        trigger.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                this.toggle();
-            } else if (e.key === "Escape" && this.isOpen) {
-                this.close();
-            }
-        });
+        trigger.addEventListener("keydown", (e) => this._onKeyDown(e));
 
         this.triggerEl = trigger;
+        this.labelEl = labelSpan;
 
         // Options panel
         const optionsPanel = document.createElement("div");
         optionsPanel.className = "custom-select-options";
+        optionsPanel.setAttribute("role", "listbox");
+        optionsPanel.id = listboxId;
 
-        for (const opt of this.options) {
+        this.options.forEach((opt, i) => {
             const item = document.createElement("div");
             item.className = "custom-select-option";
+            item.setAttribute("role", "option");
+            item.id = `${this.uid}-opt-${i}`;
             if (opt.isAction) {
                 item.classList.add("action-option");
             }
-            if (opt.value === this.selectedValue && !opt.isAction) {
-                item.classList.add("selected");
-            }
+            const isSelected = opt.value === this.selectedValue && !opt.isAction;
+            item.classList.toggle("selected", isSelected);
+            item.setAttribute("aria-selected", String(isSelected));
             item.textContent = opt.label;
             item.dataset.value = opt.value;
 
@@ -129,14 +161,103 @@ class CustomSelect {
                 e.stopPropagation();
                 this.select(opt.value);
             });
+            item.addEventListener("mousemove", () => this._setActive(i));
 
             optionsPanel.appendChild(item);
-        }
+        });
 
         this.optionsPanelEl = optionsPanel;
 
         this.container.appendChild(trigger);
         this.container.appendChild(optionsPanel);
+
+        this._syncLabel();
+    }
+
+    _syncLabel() {
+        const selected = this.options.find(
+            (o) => o.value === this.selectedValue && !o.isAction
+        );
+        if (selected) {
+            this.labelEl.textContent = selected.label;
+            this.labelEl.className = "label";
+        } else {
+            this.labelEl.textContent = this.config.placeholder || "Select...";
+            this.labelEl.className = "label placeholder";
+        }
+    }
+
+    _optionEls() {
+        return Array.from(
+            this.optionsPanelEl.querySelectorAll(".custom-select-option")
+        );
+    }
+
+    _setActive(index) {
+        const els = this._optionEls();
+        if (!els.length) return;
+        this.activeIndex = (index + els.length) % els.length;
+        els.forEach((el, i) => el.classList.toggle("active", i === this.activeIndex));
+        const active = els[this.activeIndex];
+        if (active) {
+            this.triggerEl.setAttribute("aria-activedescendant", active.id);
+            active.scrollIntoView({ block: "nearest" });
+        }
+    }
+
+    _onKeyDown(e) {
+        switch (e.key) {
+            case "Enter":
+            case " ":
+                e.preventDefault();
+                if (this.isOpen && this.activeIndex >= 0) {
+                    this.select(this.options[this.activeIndex].value);
+                } else {
+                    this.toggle();
+                }
+                break;
+            case "ArrowDown":
+                e.preventDefault();
+                if (!this.isOpen) {
+                    this.open();
+                    this._setActive(0);
+                } else {
+                    this._setActive(this.activeIndex + 1);
+                }
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                if (!this.isOpen) {
+                    this.open();
+                    this._setActive(this.options.length - 1);
+                } else {
+                    this._setActive(this.activeIndex - 1);
+                }
+                break;
+            case "Home":
+                if (this.isOpen) {
+                    e.preventDefault();
+                    this._setActive(0);
+                }
+                break;
+            case "End":
+                if (this.isOpen) {
+                    e.preventDefault();
+                    this._setActive(this.options.length - 1);
+                }
+                break;
+            case "Escape":
+                if (this.isOpen) {
+                    e.preventDefault();
+                    this.close();
+                }
+                break;
+            case "Tab":
+                this.close();
+                break;
+            default:
+                break;
+        }
     }
 
     toggle() {
@@ -148,47 +269,37 @@ class CustomSelect {
     }
 
     open() {
-        // Close all other open dropdowns first
-        document.querySelectorAll(".custom-select.open").forEach((el) => {
-            if (el !== this.container) {
-                el.classList.remove("open");
-            }
-        });
+        CustomSelect._closeAllExcept(this);
         this.isOpen = true;
         this.container.classList.add("open");
+        this.triggerEl.setAttribute("aria-expanded", "true");
+        const current = this.options.findIndex(
+            (o) => o.value === this.selectedValue && !o.isAction
+        );
+        this._setActive(current >= 0 ? current : 0);
     }
 
     close() {
         this.isOpen = false;
+        this.activeIndex = -1;
         this.container.classList.remove("open");
+        this.triggerEl.setAttribute("aria-expanded", "false");
+        this.triggerEl.removeAttribute("aria-activedescendant");
+        this._optionEls().forEach((el) => el.classList.remove("active"));
     }
 
     select(value) {
         this.selectedValue = value;
         this.close();
+        this._syncLabel();
 
-        // Update trigger label
-        const selectedOption = this.options.find(
-            (o) => o.value === value && !o.isAction
-        );
-        const labelSpan = this.triggerEl.querySelector("span:first-child");
-        if (selectedOption) {
-            labelSpan.textContent = selectedOption.label;
-            labelSpan.className = "";
-        } else {
-            labelSpan.textContent = this.config.placeholder || "Select...";
-            labelSpan.className = "placeholder";
-        }
-
-        // Update selected styling
-        this.optionsPanelEl
-            .querySelectorAll(".custom-select-option")
-            .forEach((el) => {
-                el.classList.toggle(
-                    "selected",
-                    el.dataset.value === value && !el.classList.contains("action-option")
-                );
-            });
+        this._optionEls().forEach((el) => {
+            const isSelected =
+                el.dataset.value === value &&
+                !el.classList.contains("action-option");
+            el.classList.toggle("selected", isSelected);
+            el.setAttribute("aria-selected", String(isSelected));
+        });
 
         if (this.config.onChange) {
             this.config.onChange(value);
@@ -198,23 +309,19 @@ class CustomSelect {
     /** Set value without triggering onChange */
     setValue(value) {
         this.selectedValue = value;
-        const selectedOption = this.options.find(
-            (o) => o.value === value && !o.isAction
-        );
-        const labelSpan = this.triggerEl.querySelector("span:first-child");
-        if (selectedOption) {
-            labelSpan.textContent = selectedOption.label;
-            labelSpan.className = "";
-        } else {
-            labelSpan.textContent = this.config.placeholder || "Select...";
-            labelSpan.className = "placeholder";
-        }
+        this._syncLabel();
+        this._optionEls().forEach((el) => {
+            const isSelected =
+                el.dataset.value === value &&
+                !el.classList.contains("action-option");
+            el.classList.toggle("selected", isSelected);
+            el.setAttribute("aria-selected", String(isSelected));
+        });
     }
 
-    /** Add a new option before the last (action) item */
+    /** Add a new option before any trailing action item */
     addOption(value, label) {
         const newOpt = { value, label };
-        // Insert before any action options at the end
         const actionIdx = this.options.findIndex((o) => o.isAction);
         if (actionIdx >= 0) {
             this.options.splice(actionIdx, 0, newOpt);
@@ -224,11 +331,32 @@ class CustomSelect {
         this.render();
     }
 
-    _bindOutsideClick() {
-        document.addEventListener("click", () => {
-            if (this.isOpen) {
-                this.close();
+    /** Focus the trigger (used after inline machine creation) */
+    focus() {
+        this.triggerEl.focus();
+    }
+
+    // -- instance registry: one document listener for all dropdowns, not one each --
+
+    static _register(instance) {
+        CustomSelect._instances.push(instance);
+        if (!CustomSelect._listenerBound) {
+            document.addEventListener("click", () => {
+                CustomSelect._closeAllExcept(null);
+            });
+            CustomSelect._listenerBound = true;
+        }
+    }
+
+    static _closeAllExcept(keep) {
+        for (const inst of CustomSelect._instances) {
+            if (inst !== keep && inst.isOpen) {
+                inst.close();
             }
-        });
+        }
     }
 }
+
+CustomSelect._instances = [];
+CustomSelect._listenerBound = false;
+CustomSelect._seq = 0;

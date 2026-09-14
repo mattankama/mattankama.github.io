@@ -116,8 +116,15 @@ def get_machine_last_session(machine_id):
 # ---------------------------------------------------------------------------
 
 
+def _get_routine_or_404(routine_id):
+    """Helper to get a routine or abort with a 404 JSON response."""
+    return get_or_404_json(Routine, routine_id, "Routine not found")
+
+
 def _add_exercises_to_routine(routine, exercises_data):
     """Helper function to find/create exercises and associate them with a routine."""
+    existing_exercises = {e.name.lower(): e for e in Exercise.query.all()}
+
     for i, ex_data in enumerate(exercises_data):
         ex_name = (ex_data.get("name") or "").strip()
         if not ex_name:

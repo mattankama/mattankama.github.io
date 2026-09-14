@@ -1,30 +1,80 @@
 /* ==========================================================================
    Rattlesnake — Design System
-   Dark-mode-only. Implements Design_Guidelines.md §1–§10
+   Dark-mode-only. Implements design_guidelines.md §1–§10.
    ========================================================================== */
+
+/* ---------- Self-hosted fonts (§3, §9) — no network dependency ---------- */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: block;
+    src: url('../fonts/inter-latin-var.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                   U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                   U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: block;
+    src: url('../fonts/space-grotesk-latin-var.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                   U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                   U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /* ---------- Tokens (§10) ---------- */
 :root {
+    /* Palette — the only six colours in the system (§2) */
     --color-surface: #191D24;
     --color-ink: #E8E7E4;
     --color-structure: #799496;
     --color-muted: #4A5568;
-    --color-elevated: #191D24;
+    --color-elevated: #232830;
     --color-accent: #B87D4B;
 
-    /* Neumorphic Shadows */
-    --shadow-extrude: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.4);
-    --shadow-extrude-hover: -2px -2px 4px rgba(255, 255, 255, 0.05), 2px 2px 4px rgba(0, 0, 0, 0.4);
-    --shadow-inset: inset -3px -3px 6px rgba(255, 255, 255, 0.05), inset 3px 3px 6px rgba(0, 0, 0, 0.4);
+    /* Neumorphic elevation — three tiers (§5).
+       Shadows are alpha black/white only, exactly as §5 prescribes;
+       no seventh hue enters the system. */
+    --elev-1: -1px -1px 2px rgba(255, 255, 255, 0.03),
+               2px  3px  6px rgba(0, 0, 0, 0.45);
+    --elev-2: -2px -2px 5px rgba(255, 255, 255, 0.04),
+               4px  5px 12px rgba(0, 0, 0, 0.50);
+    --elev-3: -3px -3px 8px rgba(255, 255, 255, 0.05),
+              10px 12px 28px rgba(0, 0, 0, 0.60);
+    --elev-press: -1px -1px 2px rgba(255, 255, 255, 0.03),
+                   1px  1px 3px rgba(0, 0, 0, 0.40);
 
-    --space-unit: 8px;
-    --space-micro: 4px;
+    --inset-1: inset 2px 2px 5px rgba(0, 0, 0, 0.50),
+               inset -1px -1px 3px rgba(255, 255, 255, 0.035);
+    --inset-2: inset 3px 3px 8px rgba(0, 0, 0, 0.60),
+               inset -2px -2px 5px rgba(255, 255, 255, 0.045);
+
+    /* 1px top highlight that defines the edge of every extruded element */
+    --edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    /* Spacing — 8pt grid, 4pt micro exceptions (§4) */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-8: 32px;
+    --s-12: 48px;
+
+    /* Geometry (§4, §9 — resolved) */
+    --radius: 10px;
     --touch-target-min: 44px;
-    --radius: 6px;
+
+    /* Motion (§7) — functional only, under 150ms */
     --motion-duration: 120ms;
 }
 
-/* ---------- Reset & base (§1, §3) ---------- */
+/* ---------- Reset & base ---------- */
 *,
 *::before,
 *::after {
@@ -42,117 +92,124 @@ html {
 body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 400;
+    font-size: 15px;
+    line-height: 1.45;
     color: var(--color-ink);
     background-color: var(--color-surface);
-    line-height: 1.4;
     min-height: 100dvh;
+    /* no grey flash box on mobile taps */
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* ---------- Typography scale (§3) ---------- */
+/* Controls are not text to be selected; inputs stay selectable. */
+button,
+.btn,
+.form-label,
+.sets-header,
+.set-number,
+.set-unit,
+.custom-select-trigger,
+.autocomplete-item,
+.custom-select-option {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ---------- Focus (a11y) ---------- */
+/* Transient, keyboard-only — not part of the resting accent budget (§2). */
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* ---------- Typography scale (§3) — two weights only ---------- */
 .timer-display {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 56px;
     font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
+}
+
+.set-input {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.home-title,
+.page-title,
+.session-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.15;
     letter-spacing: -0.02em;
 }
 
-.stat-value,
-input[type="number"] {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 28px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
-h1, .exercise-title {
+h1,
+.exercise-title {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 20px;
     font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
 }
 
-.btn, .form-label {
+.routine-card-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.btn,
+.form-label {
     font-size: 16px;
     font-weight: 700;
+    line-height: 1.2;
 }
 
-.metadata, .machine-label, .set-label {
-    font-size: 14px;
+.metadata,
+.routine-card-meta,
+.back-link,
+.empty-state-hint {
+    font-size: 13px;
     font-weight: 400;
+    line-height: 1.4;
     color: var(--color-structure);
 }
 
-/* ---------- Sticky bars — two anchors (§5) ---------- */
-.timer-bar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: calc(var(--space-unit) * 2) var(--space-unit);
-    background-color: var(--color-elevated);
-    border: none;
-    box-shadow: var(--shadow-extrude);
+/* Short uppercase labels only — never body text (§3) */
+.field-label,
+.sets-header span {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--color-structure);
-    transition: color var(--motion-duration) ease;
 }
 
-.timer-bar.running {
-    color: var(--color-accent);
-}
-
-/* ---------- Floating action button — Complete Session ---------- */
-.fab-complete {
-    position: fixed;
-    bottom: calc(var(--space-unit) * 3);
-    right: calc(var(--space-unit) * 3);
-    z-index: 200;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: none;
-    background-color: var(--color-surface);
-    color: var(--color-accent);
-    box-shadow: var(--shadow-extrude);
-    font-size: 28px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform var(--motion-duration) ease,
-                box-shadow var(--motion-duration) ease,
-                opacity var(--motion-duration) ease;
-}
-
-.fab-complete:hover {
-    box-shadow: var(--shadow-extrude-hover);
-}
-
-.fab-complete:active {
-    box-shadow: var(--shadow-inset);
-}
-
-.fab-complete:disabled {
-    opacity: 0.4;
-    cursor: default;
-    transform: none;
-}
-
-/* ---------- Buttons (§5, §4) ---------- */
+/* ---------- Buttons (§4, §5) ---------- */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: var(--touch-target-min);
     min-width: var(--touch-target-min);
-    padding: calc(var(--space-unit) * 1.5) calc(var(--space-unit) * 3);
+    padding: var(--s-3) var(--s-5);
     border: none;
     border-radius: var(--radius);
     background-color: var(--color-elevated);
     color: var(--color-ink);
-    box-shadow: var(--shadow-extrude);
+    box-shadow: var(--elev-2), var(--edge);
+    font-family: inherit;
     cursor: pointer;
     text-decoration: none;
     text-align: center;
@@ -161,66 +218,118 @@ h1, .exercise-title {
 }
 
 .btn:active {
-    box-shadow: var(--shadow-inset);
+    box-shadow: var(--inset-1);
 }
 
-.btn:hover {
-    box-shadow: var(--shadow-extrude-hover);
+/* Primary action: weight and extrusion carry it, not colour (§2) */
+.btn-primary {
+    background-color: var(--color-elevated);
     color: var(--color-ink);
 }
 
-.btn-accent {
-    background-color: var(--color-surface);
-    color: var(--color-accent);
-    box-shadow: var(--shadow-extrude);
-}
-
-.btn-accent:hover {
-    box-shadow: var(--shadow-extrude-hover);
-}
-
-.btn-accent:active {
-    box-shadow: var(--shadow-inset);
-}
-
+/* Quiet secondary — recedes (§2) */
 .btn-secondary,
 .btn-muted {
     background-color: var(--color-elevated);
     color: var(--color-structure);
+    box-shadow: var(--elev-1), var(--edge);
 }
 
+/* The single accent action on a screen. Surface-on-Accent = 6.3:1 (AA). */
+.btn-accent {
+    background-color: var(--color-accent);
+    color: var(--color-surface);
+    box-shadow: var(--elev-2);
+}
+
+.btn-accent:active {
+    box-shadow: var(--elev-press);
+}
+
+/* Destructive — quiet until pressed; never the loudest thing on screen */
 .btn-danger {
     background-color: var(--color-elevated);
     color: var(--color-structure);
+    box-shadow: var(--elev-1), var(--edge);
 }
 
-.btn-danger:hover {
-    color: var(--color-accent);
+.btn-danger:active {
+    box-shadow: var(--inset-1);
+    color: var(--color-ink);
 }
 
 .btn-small {
     min-height: 36px;
-    min-width: 36px;
-    padding: var(--space-micro) var(--space-unit);
+    padding: var(--s-2) var(--s-3);
     font-size: 14px;
 }
 
-/* ---------- Forms (§4, §3) ---------- */
+/* Text-weight action — no surface, just a label with a real tap target */
+.btn-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+    padding: 0 var(--s-3);
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    box-shadow: none;
+    color: var(--color-structure);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color var(--motion-duration) ease;
+}
+
+.btn-text:active {
+    color: var(--color-ink);
+}
+
+.routine-card .btn,
+.entry-block .btn,
+.exercise-row .btn,
+.confirm-box .btn {
+    box-shadow: var(--elev-1), var(--edge);
+}
+
+@media (hover: hover) {
+    .btn:hover { box-shadow: var(--elev-3), var(--edge); }
+    .routine-card .btn:hover,
+    .entry-block .btn:hover,
+    .exercise-row .btn:hover { box-shadow: var(--elev-2), var(--edge); }
+    .btn-accent:hover { box-shadow: var(--elev-3); }
+    .btn-secondary:hover,
+    .btn-muted:hover,
+    .btn-danger:hover { color: var(--color-ink); }
+    .btn-text:hover { color: var(--color-ink); }
+}
+
+/* ---------- Forms (§3, §4) ---------- */
 .form-group {
-    margin-bottom: calc(var(--space-unit) * 3);
+    margin-bottom: var(--s-6);
 }
 
 .form-label {
     display: block;
-    margin-bottom: var(--space-unit);
+    margin-bottom: var(--s-2);
     color: var(--color-ink);
 }
 
+.field-label {
+    display: block;
+    margin-bottom: var(--s-2);
+}
+
+/* 16px minimum on every text input — anything smaller makes iOS zoom the page */
 .form-input,
 input[type="text"] {
     width: 100%;
     min-height: var(--touch-target-min);
-    padding: var(--space-unit) calc(var(--space-unit) * 1.5);
+    padding: var(--s-2) var(--s-3);
     font-family: inherit;
     font-size: 16px;
     font-weight: 400;
@@ -228,98 +337,312 @@ input[type="text"] {
     background-color: var(--color-surface);
     border: none;
     border-radius: var(--radius);
-    box-shadow: var(--shadow-inset);
+    box-shadow: var(--inset-1);
     outline: none;
     transition: box-shadow var(--motion-duration) ease;
 }
 
-.form-input:focus,
-input[type="text"]:focus,
-input[type="number"]:focus {
-    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.05), inset 3px 3px 6px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--color-accent);
+input::placeholder {
+    color: var(--color-muted);
 }
 
-input[type="number"] {
-    width: 80px;
-    min-height: var(--touch-target-min);
-    padding: var(--space-micro) var(--space-unit);
-    font-family: inherit;
-    color: var(--color-ink);
-    background-color: var(--color-surface);
-    border: none;
+.form-input:focus-visible,
+input[type="text"]:focus-visible,
+.set-input:focus-visible {
+    outline: none;
+    box-shadow: var(--inset-1), 0 0 0 2px var(--color-accent);
+}
+
+/* ---------- Layout containers ---------- */
+.home-container,
+.routine-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--s-8) var(--s-4) var(--s-12);
+}
+
+/* ---------- Home ---------- */
+/* Zero accent on this screen — hierarchy from weight, size and extrusion (§2). */
+.home-header {
+    margin-bottom: var(--s-6);
+}
+
+.routines-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-bottom: var(--s-6);
+}
+
+.routine-card {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-4);
+    background-color: var(--color-elevated);
     border-radius: var(--radius);
-    box-shadow: var(--shadow-inset);
-    outline: none;
-    text-align: center;
-    -moz-appearance: textfield;
-    appearance: textfield;
+    box-shadow: var(--elev-1), var(--edge);
     transition: box-shadow var(--motion-duration) ease;
 }
 
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    appearance: none;
-    margin: 0;
+.routine-card-info {
+    flex: 1;
+    min-width: 0;
 }
 
-/* ---------- Checkbox (set completed) ---------- */
-.set-checkbox {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    accent-color: var(--color-accent);
+.routine-card-name {
+    color: var(--color-ink);
+    margin-bottom: var(--s-1);
+    overflow-wrap: anywhere;
+}
+
+.routine-card-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    flex-shrink: 0;
+}
+
+.home-actions .btn {
+    width: 100%;
+}
+
+.empty-state {
+    padding: var(--s-12) 0;
+    text-align: center;
+}
+
+.empty-state-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-ink);
+    margin-bottom: var(--s-2);
+}
+
+/* ---------- Inline error (§1 — a failure the user can actually see) ---------- */
+.inline-error {
+    padding: var(--s-3) var(--s-4);
+    margin-bottom: var(--s-3);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--color-structure);
+    background-color: var(--color-elevated);
+    box-shadow: var(--elev-1), var(--edge);
+    color: var(--color-ink);
+    font-size: 14px;
+}
+
+/* ---------- Routine editor ---------- */
+.routine-header {
+    margin-bottom: var(--s-6);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch-target-min);
+    margin-left: calc(var(--s-3) * -1);
+    padding: 0 var(--s-3);
+    text-decoration: none;
+    transition: color var(--motion-duration) ease;
+}
+
+.back-link:active {
+    color: var(--color-ink);
+}
+
+.exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
+}
+
+/* Left accent border for scroll rhythm, per §5. One border, not three. */
+.exercise-row {
+    padding: var(--s-4);
+    background-color: var(--color-elevated);
+    border-left: 3px solid var(--color-structure);
+    border-radius: var(--radius);
+    box-shadow: var(--elev-1), var(--edge);
+}
+
+.exercise-row-header {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.exercise-row-header input[type="text"] {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* Machines are subordinate to their exercise — indent and hairline say so. */
+.machine-group {
+    margin-top: var(--s-3);
+    padding-left: var(--s-3);
+    border-left: 1px solid var(--color-muted);
+}
+
+.machine-group > .field-label {
+    margin-bottom: var(--s-2);
+}
+
+.machine-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-bottom: var(--s-2);
+}
+
+.machine-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.machine-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--s-2);
+    margin-top: var(--s-6);
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+/* Destructive zone, deliberately separated from the save actions */
+.danger-zone {
+    margin-top: var(--s-12);
+    padding-top: var(--s-6);
+    border-top: 1px solid var(--color-muted);
+}
+
+.confirm-box {
+    padding: var(--s-4);
+    border-radius: var(--radius);
+    background-color: var(--color-elevated);
+    box-shadow: var(--elev-2), var(--edge);
+}
+
+.confirm-message {
+    margin-bottom: var(--s-4);
+    color: var(--color-ink);
+    font-size: 15px;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: var(--s-2);
+}
+
+.confirm-actions .btn {
+    flex: 1;
+}
+
+/* ---------- Autocomplete ---------- */
+.autocomplete-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: calc(100% + var(--s-1));
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background-color: var(--color-elevated);
+    border-radius: var(--radius);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: var(--elev-3), var(--edge);
+}
+
+.autocomplete-list.show {
+    display: block;
+}
+
+.autocomplete-item {
+    display: flex;
+    align-items: center;
+    min-height: var(--touch-target-min);
+    padding: var(--s-2) var(--s-3);
     cursor: pointer;
+    font-size: 15px;
+    color: var(--color-ink);
+    transition: background-color var(--motion-duration) ease;
 }
 
-/* ---------- Custom dropdown (replaces native <select>) ---------- */
+.autocomplete-item:active,
+.autocomplete-item.active {
+    background-color: var(--color-surface);
+}
+
+@media (hover: hover) {
+    .autocomplete-item:hover { background-color: var(--color-surface); }
+}
+
+/* ---------- Custom dropdown (replaces native <select>, §10 checklist) ---------- */
 .custom-select {
     position: relative;
     flex: 1;
+    min-width: 0;
 }
 
 .custom-select-trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--s-2);
     min-height: var(--touch-target-min);
-    padding: var(--space-unit) calc(var(--space-unit) * 1.5);
+    padding: var(--s-2) var(--s-3);
     font-family: inherit;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 400;
     color: var(--color-ink);
     background-color: var(--color-surface);
     border: none;
-    box-shadow: var(--shadow-inset);
     border-radius: var(--radius);
+    box-shadow: var(--inset-1);
     cursor: pointer;
-    user-select: none;
     transition: box-shadow var(--motion-duration) ease;
 }
 
-.custom-select-trigger:hover {
-    box-shadow: inset -2px -2px 4px rgba(255, 255, 255, 0.05), inset 2px 2px 4px rgba(0, 0, 0, 0.4);
+.custom-select.open .custom-select-trigger {
+    box-shadow: var(--inset-2);
 }
 
-.custom-select.open .custom-select-trigger {
-    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.05), inset 3px 3px 6px rgba(0, 0, 0, 0.4), 0 0 0 2px var(--color-accent);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+.custom-select-trigger .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .custom-select-trigger .placeholder {
-    color: var(--color-structure);
+    color: var(--color-muted);
 }
 
 .custom-select-trigger .arrow {
     width: 0;
     height: 0;
+    flex-shrink: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
     border-top: 5px solid var(--color-structure);
     transition: transform var(--motion-duration) ease;
-    flex-shrink: 0;
-    margin-left: var(--space-unit);
 }
 
 .custom-select.open .custom-select-trigger .arrow {
@@ -328,16 +651,15 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .custom-select-options {
     position: absolute;
-    top: 100%;
+    top: calc(100% + var(--s-1));
     left: 0;
     right: 0;
     z-index: 60;
-    background-color: var(--color-surface);
-    border: none;
-    border-radius: 0 0 var(--radius) var(--radius);
-    max-height: 200px;
+    background-color: var(--color-elevated);
+    border-radius: var(--radius);
+    max-height: 240px;
     overflow-y: auto;
-    box-shadow: var(--shadow-extrude);
+    box-shadow: var(--elev-3), var(--edge);
     display: none;
 }
 
@@ -346,345 +668,320 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .custom-select-option {
-    padding: var(--space-unit) calc(var(--space-unit) * 1.5);
+    display: flex;
+    align-items: center;
+    min-height: var(--touch-target-min);
+    padding: var(--s-2) var(--s-3);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--color-ink);
     transition: background-color var(--motion-duration) ease;
 }
 
-.custom-select-option:hover {
-    background-color: var(--color-muted);
+.custom-select-option:active,
+.custom-select-option.active {
+    background-color: var(--color-surface);
 }
 
+@media (hover: hover) {
+    .custom-select-option:hover { background-color: var(--color-surface); }
+}
+
+/* Selection reads from weight, not colour (§2) */
 .custom-select-option.selected {
-    color: var(--color-accent);
     font-weight: 700;
 }
 
 .custom-select-option.action-option {
-    color: var(--color-accent);
+    color: var(--color-structure);
     border-top: 1px solid var(--color-muted);
 }
 
-/* ---------- Layout containers ---------- */
-.home-container,
-.routine-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: calc(var(--space-unit) * 3) calc(var(--space-unit) * 2);
-}
-
-.session-content {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: calc(var(--space-unit) * 2);
-    padding-bottom: calc(var(--space-unit) * 12); /* Space for sticky bottom bar */
-}
-
-/* ---------- Home page ---------- */
-.home-header {
-    margin-bottom: calc(var(--space-unit) * 4);
-}
-
-.home-title {
-    font-size: 28px;
-    font-family: 'Space Grotesk', sans-serif;
-}
-
-.routines-list {
-    margin-bottom: calc(var(--space-unit) * 3);
-}
-
-.routine-card {
+/* ---------- Session: timer bar (§5) ---------- */
+.timer-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: calc(var(--space-unit) * 2);
-    margin-bottom: var(--space-unit);
+    gap: var(--s-1);
+    padding: var(--s-4) var(--s-4) var(--s-3);
     background-color: var(--color-elevated);
-    border-radius: var(--radius);
-    border: none;
-    box-shadow: var(--shadow-extrude);
-    transition: box-shadow var(--motion-duration) ease;
+    /* A divider line, not a shadow, separates it from the list below (§5). */
+    border-bottom: 1px solid var(--color-muted);
+    padding-top: max(var(--s-4), env(safe-area-inset-top));
 }
 
-.routine-card:hover {
-    box-shadow: var(--shadow-extrude-hover);
-}
-
-.routine-card-info {
-    flex: 1;
-}
-
-.routine-card-name {
-    font-size: 18px;
+.timer-label {
+    font-size: 11px;
     font-weight: 700;
-    margin-bottom: var(--space-micro);
-}
-
-.routine-card-meta {
-    font-size: 14px;
-    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--color-structure);
 }
 
-.routine-card-actions {
-    display: flex;
-    gap: var(--space-unit);
-    align-items: center;
-}
-
-.home-actions {
-    margin-top: calc(var(--space-unit) * 2);
-}
-
-.home-actions .btn {
-    width: 100%;
-}
-
-.empty-state {
-    padding: calc(var(--space-unit) * 6) 0;
-    text-align: center;
-    color: var(--color-structure);
-    font-size: 16px;
-}
-
-/* ---------- Routine editor ---------- */
-.routine-header {
-    margin-bottom: calc(var(--space-unit) * 3);
-}
-
-.back-link {
-    display: inline-block;
-    margin-bottom: var(--space-unit);
-    color: var(--color-structure);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 400;
+/* Ink at rest; Accent only while running (§5) */
+.timer-display {
+    color: var(--color-ink);
     transition: color var(--motion-duration) ease;
 }
 
-.back-link:hover {
-    color: var(--color-ink);
+.timer-bar.running .timer-display {
+    color: var(--color-accent);
 }
 
-.page-title {
-    font-size: 24px;
-    font-family: 'Space Grotesk', sans-serif;
+/* ---------- Session: content ---------- */
+.session-content {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--s-6) var(--s-4);
+    /* clear the fixed complete bar */
+    padding-bottom: calc(var(--s-12) + 72px + env(safe-area-inset-bottom));
 }
 
-.exercise-list {
-    margin-bottom: calc(var(--space-unit) * 2);
-}
-
-.exercise-row {
-    padding: calc(var(--space-unit) * 2) 0;
-    padding-left: calc(var(--space-unit) * 2);
-    border-left: 3px solid var(--color-muted);
-    border-bottom: 1px solid var(--color-muted);
-    margin-bottom: var(--space-unit);
-}
-
-.exercise-row-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-unit);
-    margin-bottom: var(--space-unit);
-}
-
-.exercise-row-header input[type="text"] {
-    flex: 1;
-}
-
-.machine-list {
-    padding-left: calc(var(--space-unit) * 2);
-    margin-top: var(--space-unit);
-}
-
-.machine-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-unit);
-    margin-bottom: var(--space-unit);
-}
-
-.machine-row input[type="text"] {
-    flex: 1;
-    font-size: 14px;
-    min-height: 36px;
-}
-
-.form-actions {
-    display: flex;
-    gap: var(--space-unit);
-    margin-top: calc(var(--space-unit) * 3);
-}
-
-.form-actions .btn {
-    flex: 1;
-}
-
-/* Autocomplete */
-.autocomplete-wrapper {
-    position: relative;
-    flex: 1;
-}
-
-.autocomplete-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    background: var(--color-surface);
-    border: none;
-    border-radius: 0 0 var(--radius) var(--radius);
-    max-height: 200px;
-    overflow-y: auto;
-    display: none;
-    box-shadow: var(--shadow-extrude);
-}
-
-.autocomplete-list.show {
-    display: block;
-}
-
-.autocomplete-item {
-    padding: var(--space-unit) calc(var(--space-unit) * 1.5);
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--color-ink);
-    transition: background-color var(--motion-duration) ease;
-}
-
-.autocomplete-item:hover {
-    background-color: var(--color-muted);
-}
-
-/* ---------- Session page ---------- */
 .session-header {
-    margin-bottom: calc(var(--space-unit) * 2);
+    margin-bottom: var(--s-5);
 }
 
-.session-title {
-    font-size: 24px;
-    font-family: 'Space Grotesk', sans-serif;
+.entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
 }
 
 .entry-block {
-    padding: calc(var(--space-unit) * 2) 0;
-    padding-left: calc(var(--space-unit) * 2);
-    border-left: 3px solid var(--color-muted);
-    border-bottom: 1px solid var(--color-muted);
-    margin-bottom: var(--space-unit);
+    padding: var(--s-4);
+    background-color: var(--color-elevated);
+    border-left: 3px solid var(--color-structure);
+    border-radius: var(--radius);
+    box-shadow: var(--elev-1), var(--edge);
 }
 
 .entry-header {
-    margin-bottom: calc(var(--space-unit) * 1.5);
+    margin-bottom: var(--s-3);
 }
 
 .exercise-title {
-    margin-bottom: var(--space-micro);
+    color: var(--color-ink);
+    margin-bottom: var(--s-2);
+    overflow-wrap: anywhere;
 }
 
 .machine-selector {
     display: flex;
     align-items: center;
-    gap: var(--space-unit);
-    margin-top: var(--space-unit);
+    gap: var(--s-2);
 }
 
-.sets-table {
-    width: 100%;
-    margin: calc(var(--space-unit) * 1.5) 0;
+.new-machine-inline {
+    margin-top: var(--s-2);
+}
+
+/* ---------- Session: sets ----------
+   One grid definition, shared by the header and every row, so the two can
+   never drift out of alignment. Units live in the header, not the rows. */
+.sets-header,
+.set-row {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1.15fr) minmax(0, 1fr) 44px 50px;
+    gap: 6px;
+    align-items: center;
 }
 
 .sets-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-unit);
-    padding-bottom: var(--space-unit);
+    padding-bottom: var(--s-2);
+    margin-bottom: var(--s-2);
     border-bottom: 1px solid var(--color-muted);
-    margin-bottom: var(--space-unit);
 }
 
 .sets-header span {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--color-structure);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sets-header span:first-child {
+    text-align: left;
 }
 
 .set-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-unit);
-    margin-bottom: var(--space-unit);
     min-height: var(--touch-target-min);
+    margin-bottom: var(--s-2);
 }
 
-.set-row .set-number {
-    width: 28px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--color-structure);
-}
-
-.set-row input[type="number"] {
-    flex: 1;
-    max-width: 90px;
-}
-
-.set-row .set-unit {
+.set-number {
     font-size: 13px;
     font-weight: 400;
+    font-variant-numeric: tabular-nums;
     color: var(--color-structure);
-    width: 24px;
 }
 
-.set-row .btn-remove-set {
-    border: none;
-    background: none;
-    color: var(--color-muted);
-    cursor: pointer;
-    font-size: 18px;
-    min-width: 32px;
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color var(--motion-duration) ease;
-}
-
-.set-row .btn-remove-set:hover {
-    color: var(--color-accent);
-}
-
-.set-row.completed {
-    opacity: 0.5;
-}
-
-.entry-actions {
-    margin-top: var(--space-unit);
-}
-
-/* ---------- Native select fallback (hidden when custom dropdown is active) ---------- */
-select {
+.set-input {
     width: 100%;
-    min-height: var(--touch-target-min);
-    padding: var(--space-unit) calc(var(--space-unit) * 1.5);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 400;
+    min-height: 52px;
+    padding: var(--s-1) var(--s-2);
     color: var(--color-ink);
     background-color: var(--color-surface);
     border: none;
-    box-shadow: var(--shadow-inset);
     border-radius: var(--radius);
+    box-shadow: var(--inset-1);
     outline: none;
-    transition: box-shadow var(--motion-duration) ease;
-    display: none; /* Hidden by default — custom dropdown replaces it */
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: box-shadow var(--motion-duration) ease,
+                color var(--motion-duration) ease;
+}
+
+.set-input::-webkit-inner-spin-button,
+.set-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+/* Completion toggle — a real 44px target wrapping a visible box.
+   No accent: the budget belongs to the timer (§2). */
+.set-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.set-toggle .box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius);
+    background-color: var(--color-surface);
+    box-shadow: var(--inset-1), inset 0 0 0 1px var(--color-muted);
+    color: transparent;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    transition: color var(--motion-duration) ease,
+                box-shadow var(--motion-duration) ease;
+}
+
+.set-row.completed .set-toggle .box {
+    color: var(--color-ink);
+    box-shadow: var(--inset-2), inset 0 0 0 1px var(--color-structure);
+}
+
+/* State legible from weight and position, never from a fade (§2) */
+.set-row.completed .set-input {
+    color: var(--color-structure);
+}
+
+.set-row.completed .set-number {
+    color: var(--color-muted);
+}
+
+.btn-remove-set {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: var(--touch-target-min);
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-structure);
+    font-family: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--motion-duration) ease;
+}
+
+.btn-remove-set:active {
+    color: var(--color-ink);
+}
+
+@media (hover: hover) {
+    .btn-remove-set:hover { color: var(--color-ink); }
+}
+
+.entry-actions {
+    margin-top: var(--s-3);
+}
+
+.entry-actions .btn {
+    width: 100%;
+}
+
+.sets-empty {
+    padding: var(--s-3) 0;
+    font-size: 13px;
+    color: var(--color-structure);
+}
+
+/* ---------- Session: complete bar (§5) ----------
+   Pinned to the bottom, full width, solid Accent fill, bold label. */
+.complete-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    padding: var(--s-3) var(--s-4);
+    padding-bottom: max(var(--s-3), env(safe-area-inset-bottom));
+    background-color: var(--color-elevated);
+    border-top: 1px solid var(--color-muted);
+}
+
+.complete-bar .btn {
+    width: 100%;
+    max-width: 568px;
+    margin: 0 auto;
+    display: flex;
+}
+
+/* One accent per screen (§2): once the timer is running it owns the copper,
+   so the complete button steps back to Ink on Elevated. See ADR 0001. */
+body.timer-running .complete-bar .btn-accent {
+    background-color: var(--color-elevated);
+    color: var(--color-ink);
+    box-shadow: var(--elev-2), var(--edge);
+}
+
+.complete-bar .btn:disabled {
+    background-color: var(--color-elevated);
+    color: var(--color-muted);
+    box-shadow: var(--inset-1);
+    cursor: default;
+}
+
+/* ---------- Narrow phones ---------- */
+@media (max-width: 380px) {
+    .sets-header,
+    .set-row {
+        grid-template-columns: 22px minmax(0, 1.15fr) minmax(0, 1fr) 40px 46px;
+        gap: var(--s-1);
+    }
+
+    .sets-header span {
+        font-size: 9px;
+        letter-spacing: 0.04em;
+    }
+
+    .set-input {
+        font-size: 26px;
+    }
+
+    .set-toggle {
+        width: 40px;
+    }
 }

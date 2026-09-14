@@ -1,3 +1,4 @@
+import mimetypes
 import os
 
 from flask import Flask
@@ -5,6 +6,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 
 db = SQLAlchemy()
+
+# Flask does not map .webmanifest by default; without this it is served as
+# application/octet-stream and browsers reject the manifest.
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 
 def _set_sqlite_pragma(dbapi_conn, connection_record):

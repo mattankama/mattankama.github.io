@@ -1,6 +1,6 @@
 /**
  * Rattlesnake — Active session logic
- * Timer, exercise entries, machine selection, set management, session completion.
+ * Timer, exercise entries, machine selection, set management, completion.
  */
 
 // Timer state
@@ -21,17 +21,21 @@ async function init() {
         document.getElementById("session-title").textContent = session.routine_name;
         renderEntries(session.entries);
 
-        // Disable complete button if session is already completed
         if (session.status === "completed") {
             const btn = document.getElementById("complete-session-btn");
             btn.disabled = true;
+            btn.textContent = "Session Complete";
         }
     } catch (err) {
-        document.getElementById("entries-list").innerHTML =
-            `<div class="empty-state"><p>Error loading session: ${err.message}</p></div>`;
+        showError(
+            document.getElementById("session-content"),
+            `Could not load this session: ${err.message}`
+        );
     }
 
-    document.getElementById("complete-session-btn").addEventListener("click", completeSession);
+    document
+        .getElementById("complete-session-btn")
+        .addEventListener("click", completeSession);
 }
 
 // ---------------------------------------------------------------------------
@@ -46,8 +50,10 @@ function resetAndStartTimer() {
     timer.running = true;
     updateTimerDisplay();
 
-    const timerBar = document.getElementById("timer-bar");
-    timerBar.classList.add("running");
+    // The running timer becomes the screen's single accent; the complete
+    // button steps back to Ink on Elevated. See docs/adr/0001.
+    document.getElementById("timer-bar").classList.add("running");
+    document.body.classList.add("timer-running");
 
     timer.intervalId = setInterval(() => {
         timer.seconds++;
@@ -56,8 +62,7 @@ function resetAndStartTimer() {
 }
 
 function updateTimerDisplay() {
-    const display = document.getElementById("timer-display");
-    display.textContent = formatTime(timer.seconds);
+    document.getElementById("timer-display").textContent = formatTime(timer.seconds);
 }
 
 function formatTime(totalSeconds) {
@@ -81,8 +86,8 @@ function renderEntries(entries) {
 
         const exerciseName = entry.exercise ? entry.exercise.name : "Unknown";
         const machines = entry.exercise ? entry.exercise.machines || [] : [];
+        const exerciseId = entry.exercise ? entry.exercise.id : null;
 
-        // Build the dropdown options
         const dropdownOptions = machines.map((m) => ({
             value: String(m.id),
             label: m.name,
@@ -102,75 +107,122 @@ function renderEntries(entries) {
                     <div id="machine-dropdown-${entry.id}"></div>
                 </div>
                 <div class="new-machine-inline" id="new-machine-inline-${entry.id}" style="display:none;">
-                    <div class="machine-selector" style="margin-top:8px;">
-                        <input type="text" id="new-machine-input-${entry.id}" placeholder="Machine name" style="flex:1;">
-                        <button class="btn btn-accent btn-small" onclick="submitNewMachine(${entry.id}, ${entry.exercise ? entry.exercise.id : 'null'})">Add</button>
-                        <button class="btn btn-muted btn-small" onclick="cancelNewMachine(${entry.id})">Cancel</button>
+                    <div class="machine-selector">
+                        <input type="text" id="new-machine-input-${entry.id}" placeholder="Machine name" aria-label="New machine name">
+                        <button class="btn btn-secondary btn-small" data-act="add-machine">Add</button>
+                        <button class="btn btn-muted btn-small" data-act="cancel-machine">Cancel</button>
                     </div>
                 </div>
             </div>
             <div class="sets-container" id="sets-${entry.id}">
-                ${renderSetsHTML(entry.sets, entry.id)}
+                ${renderSetsHTML(entry.sets)}
             </div>
             <div class="entry-actions">
-                <button class="btn btn-secondary btn-small" onclick="addSet(${entry.id})">+ Add Set</button>
+                <button class="btn btn-secondary btn-small" data-act="add-set">+ Add Set</button>
             </div>
         `;
 
         container.appendChild(block);
 
-        // Initialize custom dropdown for this entry
-        const dropdownContainer = document.getElementById(`machine-dropdown-${entry.id}`);
-        const exerciseId = entry.exercise ? entry.exercise.id : null;
+        block.querySelector('[data-act="add-machine"]')
+            .addEventListener("click", () => submitNewMachine(entry.id, exerciseId));
+        block.querySelector('[data-act="cancel-machine"]')
+            .addEventListener("click", () => cancelNewMachine(entry.id));
+        block.querySelector('[data-act="add-set"]')
+            .addEventListener("click", () => addSet(entry.id));
 
-        machineDropdowns[entry.id] = new CustomSelect(dropdownContainer, {
-            placeholder: "Select machine",
-            options: dropdownOptions,
-            selectedValue: selectedMachineId,
-            id: `machine-select-${entry.id}`,
-            onChange: (value) => onMachineChange(entry.id, value, exerciseId),
-        });
+        bindSetHandlers(entry.id);
+
+        machineDropdowns[entry.id] = new CustomSelect(
+            document.getElementById(`machine-dropdown-${entry.id}`),
+            {
+                placeholder: "Select machine",
+                options: dropdownOptions,
+                selectedValue: selectedMachineId,
+                id: `machine-select-${entry.id}`,
+                onChange: (value) => onMachineChange(entry.id, value, exerciseId),
+            }
+        );
     }
 }
 
-function renderSetsHTML(sets, entryId) {
+/**
+ * One grid definition drives both the header and every row, so the two can
+ * never drift. Units live in the header, not in each row (§4).
+ */
+function renderSetsHTML(sets) {
     if (!sets || sets.length === 0) {
-        return '<div class="metadata" style="padding: 8px 0;">Select a machine to load sets</div>';
+        return '<div class="sets-empty">Select a machine to load sets</div>';
     }
 
     let html = `
         <div class="sets-header">
-            <span style="width:28px">Set</span>
-            <span style="flex:1;max-width:90px">Weight</span>
-            <span style="width:24px"></span>
-            <span style="flex:1;max-width:90px">Reps</span>
-            <span style="width:24px">✓</span>
-            <span style="width:32px"></span>
+            <span>Set</span>
+            <span>Weight (lbs)</span>
+            <span>Reps</span>
+            <span>Done</span>
+            <span>Remove</span>
         </div>
     `;
 
-    for (let i = 0; i < sets.length; i++) {
-        const s = sets[i];
+    sets.forEach((s, i) => {
         html += `
-            <div class="set-row ${s.completed ? "completed" : ""}" id="set-row-${s.id}">
+            <div class="set-row ${s.completed ? "completed" : ""}" id="set-row-${s.id}" data-set-id="${s.id}">
                 <span class="set-number">${i + 1}</span>
-                <input type="number" inputmode="decimal" value="${s.weight}" min="0" step="any"
-                       onfocus="this.select()"
-                       onchange="updateSet(${s.id}, 'weight', this.value)"
-                       onblur="updateSet(${s.id}, 'weight', this.value)">
-                <span class="set-unit">lbs</span>
-                <input type="number" inputmode="numeric" value="${s.reps}" min="0"
-                       onfocus="this.select()"
-                       onchange="updateSet(${s.id}, 'reps', this.value)"
-                       onblur="updateSet(${s.id}, 'reps', this.value)">
-                <input type="checkbox" class="set-checkbox" ${s.completed ? "checked" : ""}
-                       onchange="toggleSetComplete(${s.id}, this.checked, ${entryId})">
-                <button class="btn-remove-set" onclick="removeSet(${s.id}, ${entryId})">×</button>
+                <input type="number" class="set-input" inputmode="decimal" min="0" step="any"
+                       value="${s.weight}" aria-label="Set ${i + 1} weight in pounds"
+                       data-field="weight">
+                <input type="number" class="set-input" inputmode="numeric" min="0"
+                       value="${s.reps}" aria-label="Set ${i + 1} reps"
+                       data-field="reps">
+                <button class="set-toggle" role="checkbox" data-act="toggle"
+                        aria-checked="${s.completed ? "true" : "false"}"
+                        aria-label="Mark set ${i + 1} complete">
+                    <span class="box" aria-hidden="true">✓</span>
+                </button>
+                <button class="btn-remove-set" data-act="remove"
+                        aria-label="Remove set ${i + 1}">×</button>
             </div>
         `;
-    }
+    });
 
     return html;
+}
+
+/** Wire the set controls inside one entry's sets container. */
+function bindSetHandlers(entryId) {
+    const container = document.getElementById(`sets-${entryId}`);
+    if (!container) return;
+
+    container.querySelectorAll(".set-row").forEach((row) => {
+        const setId = Number(row.dataset.setId);
+
+        row.querySelectorAll(".set-input").forEach((input) => {
+            input.addEventListener("focus", () => input.select());
+            const commit = () => updateSet(setId, input.dataset.field, input.value);
+            input.addEventListener("change", commit);
+            input.addEventListener("blur", commit);
+        });
+
+        row.querySelector('[data-act="toggle"]').addEventListener("click", (e) => {
+            const btn = e.currentTarget;
+            const next = btn.getAttribute("aria-checked") !== "true";
+            toggleSetComplete(setId, next, entryId);
+        });
+
+        row.querySelector('[data-act="remove"]').addEventListener("click", () =>
+            removeSet(setId, entryId)
+        );
+    });
+}
+
+/** Re-render one entry's sets from the server and rebind its handlers. */
+async function refreshEntrySets(entryId) {
+    const session = await fetchJSON(`/api/sessions/${window.SESSION_ID}`);
+    const entry = session.entries.find((e) => e.id === entryId);
+    if (!entry) return;
+    document.getElementById(`sets-${entryId}`).innerHTML = renderSetsHTML(entry.sets);
+    bindSetHandlers(entryId);
 }
 
 // ---------------------------------------------------------------------------
@@ -179,20 +231,16 @@ function renderSetsHTML(sets, entryId) {
 
 async function onMachineChange(entryId, value, exerciseId) {
     if (value === "__new__") {
-        // Show inline input instead of prompt()
         const inlineEl = document.getElementById(`new-machine-inline-${entryId}`);
         inlineEl.style.display = "block";
         const input = document.getElementById(`new-machine-input-${entryId}`);
         input.value = "";
         input.focus();
 
-        // Reset dropdown back to placeholder
         const dropdown = machineDropdowns[entryId];
-        if (dropdown) {
-            dropdown.setValue("");
-        }
+        if (dropdown) dropdown.setValue("");
     } else if (value) {
-        await prefillSets(entryId, parseInt(value));
+        await prefillSets(entryId, parseInt(value, 10));
     }
 }
 
@@ -205,35 +253,31 @@ async function submitNewMachine(entryId, exerciseId) {
     }
 
     try {
-        // Create machine
         const machine = await fetchJSON(`/api/exercises/${exerciseId}/machines`, {
             method: "POST",
             body: JSON.stringify({ name }),
         });
 
-        // Add to custom dropdown and select it
         const dropdown = machineDropdowns[entryId];
         if (dropdown) {
             dropdown.addOption(String(machine.id), machine.name);
             dropdown.select(String(machine.id));
         }
 
-        // Hide inline input
         document.getElementById(`new-machine-inline-${entryId}`).style.display = "none";
-
-        // Prefill sets
         await prefillSets(entryId, machine.id);
     } catch (err) {
-        console.error("Failed to create machine:", err);
+        showError(
+            document.getElementById(`entry-${entryId}`),
+            `Could not add that machine: ${err.message}`
+        );
     }
 }
 
 function cancelNewMachine(entryId) {
     document.getElementById(`new-machine-inline-${entryId}`).style.display = "none";
     const dropdown = machineDropdowns[entryId];
-    if (dropdown) {
-        dropdown.setValue("");
-    }
+    if (dropdown) dropdown.setValue("");
 }
 
 async function prefillSets(entryId, machineId) {
@@ -243,10 +287,14 @@ async function prefillSets(entryId, machineId) {
             body: JSON.stringify({ machine_id: machineId }),
         });
 
-        const setsContainer = document.getElementById(`sets-${entryId}`);
-        setsContainer.innerHTML = renderSetsHTML(entry.sets, entryId);
+        document.getElementById(`sets-${entryId}`).innerHTML = renderSetsHTML(entry.sets);
+        bindSetHandlers(entryId);
+        clearError(document.getElementById(`entry-${entryId}`));
     } catch (err) {
-        console.error("Failed to load sets:", err);
+        showError(
+            document.getElementById(`entry-${entryId}`),
+            `Could not load sets: ${err.message}`
+        );
     }
 }
 
@@ -259,7 +307,7 @@ async function updateSet(setId, field, value) {
     if (field === "weight") {
         payload.weight = parseFloat(value) || 0;
     } else if (field === "reps") {
-        payload.reps = parseInt(value) || 0;
+        payload.reps = parseInt(value, 10) || 0;
     }
 
     try {
@@ -279,53 +327,48 @@ async function toggleSetComplete(setId, completed, entryId) {
             body: JSON.stringify({ completed }),
         });
 
-        // Update row styling
         const row = document.getElementById(`set-row-${setId}`);
         if (row) {
             row.classList.toggle("completed", completed);
+            const toggle = row.querySelector('[data-act="toggle"]');
+            if (toggle) toggle.setAttribute("aria-checked", String(completed));
         }
 
-        // Reset and start timer when a set is completed
         if (completed) {
             resetAndStartTimer();
         }
     } catch (err) {
-        console.error("Failed to toggle set:", err);
+        showError(
+            document.getElementById(`entry-${entryId}`),
+            `Could not update that set: ${err.message}`
+        );
     }
 }
 
 async function addSet(entryId) {
     try {
-        const newSet = await fetchJSON(`/api/session-entries/${entryId}/sets`, {
+        await fetchJSON(`/api/session-entries/${entryId}/sets`, {
             method: "POST",
             body: JSON.stringify({ weight: 0, reps: 0 }),
         });
-
-        // Reload entry sets
-        const session = await fetchJSON(`/api/sessions/${window.SESSION_ID}`);
-        const entry = session.entries.find((e) => e.id === entryId);
-        if (entry) {
-            const setsContainer = document.getElementById(`sets-${entryId}`);
-            setsContainer.innerHTML = renderSetsHTML(entry.sets, entryId);
-        }
+        await refreshEntrySets(entryId);
     } catch (err) {
-        console.error("Failed to add set:", err);
+        showError(
+            document.getElementById(`entry-${entryId}`),
+            `Could not add a set: ${err.message}`
+        );
     }
 }
 
 async function removeSet(setId, entryId) {
     try {
         await fetchJSON(`/api/session-sets/${setId}`, { method: "DELETE" });
-
-        // Reload entry sets
-        const session = await fetchJSON(`/api/sessions/${window.SESSION_ID}`);
-        const entry = session.entries.find((e) => e.id === entryId);
-        if (entry) {
-            const setsContainer = document.getElementById(`sets-${entryId}`);
-            setsContainer.innerHTML = renderSetsHTML(entry.sets, entryId);
-        }
+        await refreshEntrySets(entryId);
     } catch (err) {
-        console.error("Failed to remove set:", err);
+        showError(
+            document.getElementById(`entry-${entryId}`),
+            `Could not remove that set: ${err.message}`
+        );
     }
 }
 
@@ -337,7 +380,6 @@ async function completeSession() {
     const btn = document.getElementById("complete-session-btn");
     if (btn.disabled) return;
 
-    // Disable immediately to prevent double-tap
     btn.disabled = true;
 
     try {
@@ -347,16 +389,9 @@ async function completeSession() {
         window.location.href = "/";
     } catch (err) {
         btn.disabled = false;
-        console.error("Failed to complete session:", err);
+        showError(
+            document.getElementById("session-content"),
+            `Could not complete this session: ${err.message}`
+        );
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function escapeHTML(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
 }

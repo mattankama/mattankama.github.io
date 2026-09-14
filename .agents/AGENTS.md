@@ -5,8 +5,8 @@ This document contains instructions for all AI Agents working on this project an
 #Introduction
 This is a web app called rattlesnake that is used to track weightlifting workouts
 
-All context is in ./agents/CONTEXT.md
-All styling is in ./agents/design_guidelines.md
+All context is in .claude/CONTEXT.md
+All styling is in .claude/design_guidelines.md
 
 #Protocol
 90% code coverage is required - fix any and all errors immediately

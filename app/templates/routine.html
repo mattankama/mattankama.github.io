@@ -10,12 +10,12 @@
 
     <form id="routine-form" class="routine-form">
         <div class="form-group">
-            <label for="routine-name" class="form-label">Routine Name</label>
+            <label for="routine-name" class="field-label">Routine Name</label>
             <input type="text" id="routine-name" class="form-input" placeholder="e.g. Push Day" required>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Exercises</label>
+            <span class="field-label">Exercises</span>
             <div id="exercise-list" class="exercise-list">
                 <!-- Populated by JS -->
             </div>
@@ -27,6 +27,21 @@
             <a href="/" class="btn btn-muted">Cancel</a>
         </div>
     </form>
+
+    {% if routine_id %}
+    <section class="danger-zone">
+        <button type="button" class="btn btn-danger" id="delete-routine-btn">Delete Routine</button>
+        <div class="confirm-box" id="delete-confirm" style="display: none;">
+            <p class="confirm-message" id="delete-confirm-message">
+                Delete this routine? This can't be undone.
+            </p>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-muted" id="delete-cancel-btn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="delete-confirm-btn">Delete</button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
 </div>
 
 {% if routine_id %}
