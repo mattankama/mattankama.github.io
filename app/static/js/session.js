@@ -36,6 +36,12 @@ async function init() {
     document
         .getElementById("complete-session-btn")
         .addEventListener("click", completeSession);
+
+    // A row left open should close as soon as attention moves elsewhere.
+    document.addEventListener("pointerdown", (e) => {
+        const row = e.target.closest(".set-row");
+        if (!row || row.dataset.open !== "true") closeOpenRows(row);
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +153,10 @@ function renderEntries(entries) {
 /**
  * One grid definition drives both the header and every row, so the two can
  * never drift. Units live in the header, not in each row (§4).
+ *
+ * Each row is a surface that slides left to reveal its delete action. The
+ * button stays in the DOM and in the tab order, so the gesture is a shortcut
+ * rather than the only way to remove a set.
  */
 function renderSetsHTML(sets) {
     if (!sets || sets.length === 0) {
@@ -159,32 +169,124 @@ function renderSetsHTML(sets) {
             <span>Weight (lbs)</span>
             <span>Reps</span>
             <span>Done</span>
-            <span>Remove</span>
         </div>
     `;
 
     sets.forEach((s, i) => {
         html += `
             <div class="set-row ${s.completed ? "completed" : ""}" id="set-row-${s.id}" data-set-id="${s.id}">
-                <span class="set-number">${i + 1}</span>
-                <input type="number" class="set-input" inputmode="decimal" min="0" step="any"
-                       value="${s.weight}" aria-label="Set ${i + 1} weight in pounds"
-                       data-field="weight">
-                <input type="number" class="set-input" inputmode="numeric" min="0"
-                       value="${s.reps}" aria-label="Set ${i + 1} reps"
-                       data-field="reps">
-                <button class="set-toggle" role="checkbox" data-act="toggle"
-                        aria-checked="${s.completed ? "true" : "false"}"
-                        aria-label="Mark set ${i + 1} complete">
-                    <span class="box" aria-hidden="true">✓</span>
-                </button>
-                <button class="btn-remove-set" data-act="remove"
-                        aria-label="Remove set ${i + 1}">×</button>
+                <div class="set-row-delete">
+                    <button class="set-delete-btn" data-act="remove"
+                            aria-label="Remove set ${i + 1}">Delete</button>
+                </div>
+                <div class="set-row-surface">
+                    <span class="set-number">${i + 1}</span>
+                    <input type="number" class="set-input" inputmode="decimal" min="0" step="any"
+                           value="${s.weight}" aria-label="Set ${i + 1} weight in pounds"
+                           data-field="weight">
+                    <input type="number" class="set-input" inputmode="numeric" min="0"
+                           value="${s.reps}" aria-label="Set ${i + 1} reps"
+                           data-field="reps">
+                    <button class="set-toggle" role="checkbox" data-act="toggle"
+                            aria-checked="${s.completed ? "true" : "false"}"
+                            aria-label="Mark set ${i + 1} complete">
+                        <span class="box" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12.5 L10 17.5 L19 6.5" stroke="currentColor"
+                                      stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
             </div>
         `;
     });
 
     return html;
+}
+
+const SWIPE_WIDTH = 96;      // matches .set-row-delete
+const SWIPE_TRIGGER = 40;    // past this, the row snaps open
+
+/**
+ * Slide one row's surface. `animate` marks a settled position (a snap); live
+ * drag positions must not be recorded as open, or the next pointermove reads
+ * the row as already open and jumps straight to the full offset.
+ */
+function setRowOffset(row, px, animate) {
+    const surface = row.querySelector(".set-row-surface");
+    if (!surface) return;
+    row.classList.toggle("snapping", !!animate);
+    surface.style.transform = px ? `translateX(${px}px)` : "";
+    if (animate) row.dataset.open = px ? "true" : "false";
+}
+
+/** Close every open row except the one passed in. */
+function closeOpenRows(except) {
+    document.querySelectorAll('.set-row[data-open="true"]').forEach((row) => {
+        if (row !== except) setRowOffset(row, 0, true);
+    });
+}
+
+/** Attach the swipe gesture to a single row. */
+function bindSwipe(row) {
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    let decided = false;
+
+    row.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        startX = e.clientX;
+        startY = e.clientY;
+        dragging = true;
+        decided = false;
+    });
+
+    row.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        // Only claim the gesture once it is clearly horizontal, so vertical
+        // scrolling and text selection inside the inputs still work.
+        if (!decided) {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            if (Math.abs(dx) <= Math.abs(dy)) {
+                dragging = false;
+                return;
+            }
+            decided = true;
+            closeOpenRows(row);
+            row.setPointerCapture(e.pointerId);
+        }
+
+        const open = row.dataset.open === "true" ? -SWIPE_WIDTH : 0;
+        const next = Math.max(-SWIPE_WIDTH, Math.min(0, open + dx));
+        setRowOffset(row, next, false);
+    });
+
+    const finish = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        if (!decided) return;
+        decided = false;
+        if (row.hasPointerCapture && row.hasPointerCapture(e.pointerId)) {
+            row.releasePointerCapture(e.pointerId);
+        }
+        const dx = e.clientX - startX;
+        const wasOpen = row.dataset.open === "true";
+        const shouldOpen = wasOpen ? dx < SWIPE_TRIGGER : dx < -SWIPE_TRIGGER;
+        setRowOffset(row, shouldOpen ? -SWIPE_WIDTH : 0, true);
+    };
+
+    row.addEventListener("pointerup", finish);
+    row.addEventListener("pointercancel", finish);
+
+    // Keyboard users never swipe: focusing the delete button opens the row.
+    const del = row.querySelector('[data-act="remove"]');
+    del.addEventListener("focus", () => setRowOffset(row, -SWIPE_WIDTH, true));
+    del.addEventListener("blur", () => setRowOffset(row, 0, true));
 }
 
 /** Wire the set controls inside one entry's sets container. */
@@ -211,6 +313,8 @@ function bindSetHandlers(entryId) {
         row.querySelector('[data-act="remove"]').addEventListener("click", () =>
             removeSet(setId, entryId)
         );
+
+        bindSwipe(row);
     });
 }
 

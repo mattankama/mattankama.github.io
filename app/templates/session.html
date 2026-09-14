@@ -4,7 +4,6 @@
 {% block content %}
 <!-- Sticky rest timer (top anchor, §5) -->
 <div class="timer-bar" id="timer-bar">
-    <span class="timer-label">Rest</span>
     <span class="timer-display" id="timer-display" role="timer" aria-live="off">00:00</span>
 </div>
 
@@ -17,6 +16,8 @@
     <div id="entries-list" class="entries-list">
         <!-- Populated by JS -->
     </div>
+
+    <p class="sets-hint">Swipe a set left to delete it.</p>
 </div>
 
 <!-- Complete Session: pinned to the bottom, full width (§5). No accent —
