@@ -1,665 +1,493 @@
 /* ==========================================================================
-   Rattlesnake — Design System
-   Dark-mode-only. Implements design_guidelines.md §1–§10.
+   RATTLESNAKE — Instrument Panel
+   A high-contrast, type-led dark UI. Swiss structural discipline (strict
+   grid, rules instead of cards, ruthless alignment) with an athletic
+   instrument register: monospaced tabular figures, uppercase micro-labels,
+   one high-luminance signal colour.
+
+   Built for a gym: read at arm's length, in bad light, one-handed, mid-set.
+   Hierarchy is carried by SIZE and WEIGHT, never by a hairline — hairlines
+   are structure, not information.
    ========================================================================== */
 
-/* ---------- Self-hosted fonts (§3, §9) — no network dependency ---------- */
+/* --------------------------------------------------------------------------
+   1. Typefaces — self-hosted, latin subset, no network required
+   -------------------------------------------------------------------------- */
+
 @font-face {
-    font-family: 'Plus Jakarta Sans';
+    font-family: "Geist";
     font-style: normal;
-    font-weight: 400 700;
+    font-weight: 100 900;
     font-display: block;
-    src: url('../fonts/plus-jakarta-sans-latin-var.woff2') format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-                   U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-                   U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    src: url("../fonts/geist-latin-var.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
-    font-family: 'Outfit';
+    font-family: "Geist Mono";
     font-style: normal;
-    font-weight: 400 700;
+    font-weight: 100 900;
     font-display: block;
-    src: url('../fonts/outfit-latin-var.woff2') format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-                   U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-                   U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    src: url("../fonts/geist-mono-latin-var.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ---------- Tokens (§10) ---------- */
+/* --------------------------------------------------------------------------
+   2. Tokens
+   -------------------------------------------------------------------------- */
+
 :root {
-    /* Palette — the only six colours in the system (§2) */
-    --color-surface: #191D24;
-    --color-ink: #E8E7E4;
-    --color-structure: #799496;
-    --color-muted: #4A5568;
-    --color-elevated: #232830;
-    --color-accent: #B87D4B;
+    /* --- Colour ---------------------------------------------------------
+       Every text pair below is measured against its real background:
+         fg   on bg  18.13:1      fg-2 on bg   7.60:1
+         fg-3 on bg   6.07:1      volt on bg  17.33:1
+         ink  on volt 17.33:1     danger on bg 7.18:1
+       All clear WCAG AA (4.5:1) at body size. ------------------------- */
+    --bg: #08090a; /* canvas */
+    --bg-1: #101113; /* raised panel */
+    --bg-2: #17181b; /* control / input well */
+    --bg-3: #1e2024; /* pressed / hovered control */
 
-    /* Neumorphic elevation — three tiers (§5).
-       Shadows are alpha black/white only, exactly as §5 prescribes;
-       no seventh hue enters the system. */
-    --elev-1: -1px -1px 2px rgba(255, 255, 255, 0.03),
-               2px  3px  6px rgba(0, 0, 0, 0.45);
-    --elev-2: -2px -2px 5px rgba(255, 255, 255, 0.04),
-               4px  5px 12px rgba(0, 0, 0, 0.50);
-    --elev-3: -3px -3px 8px rgba(255, 255, 255, 0.05),
-              10px 12px 28px rgba(0, 0, 0, 0.60);
-    --elev-press: -1px -1px 2px rgba(255, 255, 255, 0.03),
-                   1px  1px 3px rgba(0, 0, 0, 0.40);
+    --line: #23252a; /* hairline between rows */
+    --line-2: #33363d; /* structural rule, control border */
 
-    --inset-1: inset 2px 2px 5px rgba(0, 0, 0, 0.50),
-               inset -1px -1px 3px rgba(255, 255, 255, 0.035);
-    --inset-2: inset 3px 3px 8px rgba(0, 0, 0, 0.60),
-               inset -2px -2px 5px rgba(255, 255, 255, 0.045);
+    --fg: #f4f4f5; /* the numbers and names you read */
+    --fg-2: #9ca0a8; /* supporting text */
+    --fg-3: #8a8e97; /* micro-labels, units, indices */
 
-    /* 1px top highlight that defines the edge of every extruded element */
-    --edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    /* One signal colour. It marks whatever is LIVE or GO right now:
+       a running rest timer, a completed set, the primary action. */
+    --volt: #d7ff3e;
+    --volt-ink: #08090a; /* text sitting on volt */
+    --volt-tint: rgba(215, 255, 62, 0.07);
+    --volt-line: rgba(215, 255, 62, 0.42);
 
-    /* Spacing — 8pt grid, 4pt micro exceptions (§4) */
-    --s-1: 4px;
-    --s-2: 8px;
-    --s-3: 12px;
-    --s-4: 16px;
-    --s-5: 20px;
-    --s-6: 24px;
-    --s-8: 32px;
-    --s-12: 48px;
+    --danger: #ff6b6b;
+    --danger-ink: #08090a;
+    --danger-tint: rgba(255, 107, 107, 0.1);
 
-    /* Geometry (§4, §9 — resolved) */
-    --radius: 10px;
-    --touch-target-min: 44px;
+    --focus: var(--volt);
 
-    /* Motion (§7) — functional only, under 150ms */
-    --motion-duration: 120ms;
+    /* --- Type ----------------------------------------------------------- */
+    --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --t-timer: clamp(3.25rem, 15vw, 4.5rem); /* 52 → 72 */
+    --t-display: clamp(1.875rem, 7vw, 2.75rem); /* 30 → 44 */
+    --t-title: 1.3125rem; /* 21 — exercise / routine name */
+    --t-num: 1.375rem; /* 22 — weight & reps */
+    --t-body: 1rem; /* 16 — also stops iOS focus-zoom */
+    --t-sm: 0.875rem; /* 14 */
+    --t-micro: 0.6875rem; /* 11 — uppercase, tracked */
+
+    --track-micro: 0.14em;
+    --track-tight: -0.02em;
+
+    /* --- Space — 4px base ----------------------------------------------- */
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 20px;
+    --s6: 24px;
+    --s8: 32px;
+    --s10: 40px;
+    --s12: 48px;
+
+    --gutter: var(--s5); /* page side padding */
+
+    /* --- Geometry -------------------------------------------------------- */
+    --r: 4px; /* the one radius */
+    --r-pill: 999px; /* tags only */
+    --tap: 48px; /* every tappable control ≥ this (spec min is 44) */
+    --shell: 720px; /* content column */
+    --rail: 300px; /* desktop session console */
+
+    /* --- Motion ---------------------------------------------------------- */
+    --dur: 160ms;
+    --dur-fast: 100ms;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* ---------- Reset & base ---------- */
+/* --------------------------------------------------------------------------
+   3. Reset & base
+   -------------------------------------------------------------------------- */
+
 *,
 *::before,
 *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
 html {
-    font-size: 16px;
+    background: var(--bg);
     -webkit-text-size-adjust: 100%;
-    color-scheme: dark;
+    text-size-adjust: 100%;
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: var(--t-body);
     font-weight: 400;
-    font-size: 15px;
     line-height: 1.45;
-    color: var(--color-ink);
-    background-color: var(--color-surface);
-    min-height: 100dvh;
-    /* no grey flash box on mobile taps */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
 }
 
-/* Controls are not text to be selected; inputs stay selectable. */
 button,
-.btn,
-.form-label,
-.sets-header,
-.set-number,
-.set-unit,
-.custom-select-trigger,
-.autocomplete-item,
-.custom-select-option {
-    -webkit-user-select: none;
-    user-select: none;
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
 }
 
-/* ---------- Focus (a11y) ---------- */
-/* Transient, keyboard-only — not part of the resting accent budget (§2). */
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+svg {
+    display: block;
+}
+
 :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
+    border-radius: var(--r);
 }
 
-/* ---------- Typography scale (§3) — two weights only ---------- */
-.timer-display {
-    font-family: 'Outfit', sans-serif;
-    font-size: 56px;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: -0.02em;
+/* --------------------------------------------------------------------------
+   4. Type primitives
+   -------------------------------------------------------------------------- */
+
+/* The technical register: every label, unit, index and count.
+   Uppercase, monospaced, widely tracked, small, quiet. */
+.micro,
+.field-label,
+.sets-header span,
+.routine-card-meta,
+.back-link,
+.empty-state-hint,
+.set-delete-btn,
+.sets-hint,
+.home-eyebrow,
+.entry-index,
+.routine-index {
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    font-weight: 500;
+    letter-spacing: var(--track-micro);
+    text-transform: uppercase;
+    color: var(--fg-3);
+    line-height: 1.4;
+}
+
+/* The readout register: anything whose digits change. Geist Mono is
+   monospaced, so figures are tabular by construction and the layout
+   never shifts as a number ticks. */
+.timer-display,
+.set-input,
+.set-number {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-}
-
-.set-input {
-    font-family: 'Outfit', sans-serif;
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-}
-
-.home-title,
-.page-title,
-.session-title {
-    font-family: 'Outfit', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--track-tight);
 }
 
 h1,
-.exercise-title {
-    font-family: 'Outfit', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.015em;
+.page-title,
+.session-title,
+.home-title {
+    font-size: var(--t-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    color: var(--fg);
 }
 
+.exercise-title,
 .routine-card-name {
-    font-family: 'Outfit', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-}
-
-.btn,
-.form-label {
-    font-size: 16px;
-    font-weight: 700;
+    font-size: var(--t-title);
+    font-weight: 600;
+    letter-spacing: var(--track-tight);
     line-height: 1.2;
+    color: var(--fg);
 }
 
-.metadata,
-.routine-card-meta,
-.back-link,
-.empty-state-hint {
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 1.4;
-    color: var(--color-structure);
-}
+/* --------------------------------------------------------------------------
+   5. Buttons
+   -------------------------------------------------------------------------- */
 
-/* Short uppercase labels only — never body text (§3) */
-.field-label,
-.sets-header span {
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-structure);
-}
-
-/* ---------- Buttons (§4, §5) ---------- */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: var(--touch-target-min);
-    min-width: var(--touch-target-min);
-    padding: var(--s-3) var(--s-5);
-    border: none;
-    border-radius: var(--radius);
-    background-color: var(--color-elevated);
-    color: var(--color-ink);
-    box-shadow: var(--elev-2), var(--edge);
-    font-family: inherit;
-    cursor: pointer;
-    text-decoration: none;
-    text-align: center;
-    transition: box-shadow var(--motion-duration) ease,
-                color var(--motion-duration) ease;
+    gap: var(--s2);
+    min-height: var(--tap);
+    padding: 0 var(--s5);
+    border-radius: var(--r);
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    transition: background-color var(--dur-fast) var(--ease),
+        border-color var(--dur-fast) var(--ease),
+        color var(--dur-fast) var(--ease);
 }
 
-.btn:active {
-    box-shadow: var(--inset-1);
-}
-
-/* Primary action: weight and extrusion carry it, not colour (§2) */
-.btn-primary {
-    background-color: var(--color-elevated);
-    color: var(--color-ink);
-}
-
-/* Quiet secondary — recedes (§2) */
-.btn-secondary,
-.btn-muted {
-    background-color: var(--color-elevated);
-    color: var(--color-structure);
-    box-shadow: var(--elev-1), var(--edge);
-}
-
-/* The single accent action on a screen. Surface-on-Accent = 6.3:1 (AA). */
+/* GO — the one volt-filled control on a screen. */
+.btn-primary,
 .btn-accent {
-    background-color: var(--color-accent);
-    color: var(--color-surface);
-    box-shadow: var(--elev-2);
+    background: var(--volt);
+    color: var(--volt-ink);
 }
 
+.btn-primary:active,
 .btn-accent:active {
-    box-shadow: var(--elev-press);
+    background: #c2e831;
 }
 
-/* Destructive — quiet until pressed; never the loudest thing on screen */
+/* Neutral, bordered. The default for everything that isn't the main action. */
+.btn-secondary {
+    background: var(--bg-2);
+    border-color: var(--line-2);
+    color: var(--fg);
+}
+
+.btn-secondary:active {
+    background: var(--bg-3);
+}
+
+/* Quietest filled control — cancels, "+ Machine". */
+.btn-muted {
+    background: transparent;
+    border-color: var(--line-2);
+    color: var(--fg-2);
+}
+
+.btn-muted:active {
+    background: var(--bg-2);
+    color: var(--fg);
+}
+
 .btn-danger {
-    background-color: var(--color-elevated);
-    color: var(--color-structure);
-    box-shadow: var(--elev-1), var(--edge);
+    background: transparent;
+    border-color: var(--danger);
+    color: var(--danger);
 }
 
 .btn-danger:active {
-    box-shadow: var(--inset-1);
-    color: var(--color-ink);
+    background: var(--danger-tint);
+}
+
+/* The final, irreversible confirm is the only solid danger fill. */
+#delete-confirm-btn {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--danger-ink);
+}
+
+#delete-confirm-btn:active {
+    background: #ff8a8a;
 }
 
 .btn-small {
-    min-height: 36px;
-    padding: var(--s-2) var(--s-3);
-    font-size: 14px;
+    min-height: 44px;
+    padding: 0 var(--s4);
+    font-size: 0.875rem;
 }
 
-/* Text-weight action — no surface, just a label with a real tap target */
+.btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* A text action — "Edit", "Remove". Kept to a full tap target. */
 .btn-text {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: var(--touch-target-min);
-    min-width: var(--touch-target-min);
-    padding: 0 var(--s-3);
-    border: none;
-    border-radius: var(--radius);
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 var(--s2);
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    font-weight: 500;
+    letter-spacing: var(--track-micro);
+    text-transform: uppercase;
+    color: var(--fg-3);
     background: none;
-    box-shadow: none;
-    color: var(--color-structure);
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 400;
-    cursor: pointer;
-    text-decoration: none;
-    transition: color var(--motion-duration) ease;
+    border: none;
+    transition: color var(--dur-fast) var(--ease);
 }
 
 .btn-text:active {
-    color: var(--color-ink);
-}
-
-.routine-card .btn,
-.entry-block .btn,
-.exercise-row .btn,
-.confirm-box .btn {
-    box-shadow: var(--elev-1), var(--edge);
+    color: var(--fg);
 }
 
 @media (hover: hover) {
-    .btn:hover { box-shadow: var(--elev-3), var(--edge); }
-    .routine-card .btn:hover,
-    .entry-block .btn:hover,
-    .exercise-row .btn:hover { box-shadow: var(--elev-2), var(--edge); }
-    .btn-accent:hover { box-shadow: var(--elev-3); }
-    .btn-secondary:hover,
-    .btn-muted:hover,
-    .btn-danger:hover { color: var(--color-ink); }
-    .btn-text:hover { color: var(--color-ink); }
+    .btn-text:hover {
+        color: var(--fg);
+    }
+    .btn-secondary:hover {
+        background: var(--bg-3);
+    }
+    .btn-muted:hover {
+        background: var(--bg-2);
+        color: var(--fg);
+    }
+    .btn-primary:hover,
+    .btn-accent:hover {
+        background: #e3ff63;
+    }
+    .btn-danger:hover {
+        background: var(--danger-tint);
+    }
 }
 
-/* ---------- Forms (§3, §4) ---------- */
+/* --------------------------------------------------------------------------
+   6. Forms
+   -------------------------------------------------------------------------- */
+
 .form-group {
-    margin-bottom: var(--s-6);
-}
-
-.form-label {
-    display: block;
-    margin-bottom: var(--s-2);
-    color: var(--color-ink);
+    margin-bottom: var(--s8);
 }
 
 .field-label {
     display: block;
-    margin-bottom: var(--s-2);
+    margin-bottom: var(--s3);
 }
 
-/* 16px minimum on every text input — anything smaller makes iOS zoom the page */
 .form-input,
 input[type="text"] {
+    display: block;
     width: 100%;
-    min-height: var(--touch-target-min);
-    padding: var(--s-2) var(--s-3);
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 400;
-    color: var(--color-ink);
-    background-color: var(--color-surface);
-    border: none;
-    border-radius: var(--radius);
-    box-shadow: var(--inset-1);
-    outline: none;
-    transition: box-shadow var(--motion-duration) ease;
+    min-height: 52px;
+    padding: 0 var(--s4);
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r);
+    color: var(--fg);
+    font-size: var(--t-body);
+    font-weight: 500;
+    transition: border-color var(--dur-fast) var(--ease),
+        background-color var(--dur-fast) var(--ease);
 }
 
 input::placeholder {
-    color: var(--color-muted);
+    color: var(--fg-3);
+    font-weight: 400;
+    opacity: 1;
 }
 
 .form-input:focus-visible,
 input[type="text"]:focus-visible,
 .set-input:focus-visible {
     outline: none;
-    box-shadow: var(--inset-1), 0 0 0 2px var(--color-accent);
-}
-
-/* ---------- Layout containers ---------- */
-.home-container,
-.routine-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: var(--s-8) var(--s-4) var(--s-12);
-}
-
-/* ---------- Home ---------- */
-/* Zero accent on this screen — hierarchy from weight, size and extrusion (§2). */
-.home-header {
-    margin-bottom: var(--s-6);
-}
-
-.routines-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-    margin-bottom: var(--s-6);
-}
-
-.routine-card {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-    padding: var(--s-4);
-    background-color: var(--color-elevated);
-    border-radius: var(--radius);
-    box-shadow: var(--elev-1), var(--edge);
-    transition: box-shadow var(--motion-duration) ease;
-}
-
-.routine-card-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.routine-card-name {
-    color: var(--color-ink);
-    margin-bottom: var(--s-1);
-    overflow-wrap: anywhere;
-}
-
-.routine-card-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--s-1);
-    flex-shrink: 0;
-}
-
-.home-actions .btn {
-    width: 100%;
-}
-
-.empty-state {
-    padding: var(--s-12) 0;
-    text-align: center;
-}
-
-.empty-state-title {
-    font-family: 'Outfit', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--color-ink);
-    margin-bottom: var(--s-2);
-}
-
-/* ---------- Inline error (§1 — a failure the user can actually see) ---------- */
-.inline-error {
-    padding: var(--s-3) var(--s-4);
-    margin-bottom: var(--s-3);
-    border-radius: var(--radius);
-    border-left: 3px solid var(--color-structure);
-    background-color: var(--color-elevated);
-    box-shadow: var(--elev-1), var(--edge);
-    color: var(--color-ink);
-    font-size: 14px;
-}
-
-/* ---------- Routine editor ---------- */
-.routine-header {
-    margin-bottom: var(--s-6);
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--touch-target-min);
-    margin-left: calc(var(--s-3) * -1);
-    padding: 0 var(--s-3);
-    text-decoration: none;
-    transition: color var(--motion-duration) ease;
-}
-
-.back-link:active {
-    color: var(--color-ink);
-}
-
-.exercise-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-    margin-bottom: var(--s-3);
-}
-
-/* Left accent border for scroll rhythm, per §5. One border, not three. */
-.exercise-row {
-    padding: var(--s-4);
-    background-color: var(--color-elevated);
-    border-left: 3px solid var(--color-structure);
-    border-radius: var(--radius);
-    box-shadow: var(--elev-1), var(--edge);
-}
-
-.exercise-row-header {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-}
-
-.exercise-row-header input[type="text"] {
-    font-family: 'Outfit', sans-serif;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-}
-
-/* Machines are subordinate to their exercise — indent and hairline say so. */
-.machine-group {
-    margin-top: var(--s-3);
-    padding-left: var(--s-3);
-    border-left: 1px solid var(--color-muted);
-}
-
-.machine-group > .field-label {
-    margin-bottom: var(--s-2);
-}
-
-.machine-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-    margin-bottom: var(--s-2);
-}
-
-.machine-row {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-}
-
-.machine-row input[type="text"] {
-    flex: 1;
-    min-width: 0;
-    min-height: 40px;
+    border-color: var(--volt);
+    background: var(--bg-3);
+    box-shadow: 0 0 0 1px var(--volt);
 }
 
 .form-actions {
     display: flex;
-    gap: var(--s-2);
-    margin-top: var(--s-6);
+    flex-direction: column;
+    gap: var(--s3);
+    margin-top: var(--s6);
 }
 
 .form-actions .btn {
-    flex: 1;
+    width: 100%;
 }
 
-/* Destructive zone, deliberately separated from the save actions */
-.danger-zone {
-    margin-top: var(--s-12);
-    padding-top: var(--s-6);
-    border-top: 1px solid var(--color-muted);
-}
+/* --------------------------------------------------------------------------
+   7. Custom select (replaces native <select>)
+   -------------------------------------------------------------------------- */
 
-.confirm-box {
-    padding: var(--s-4);
-    border-radius: var(--radius);
-    background-color: var(--color-elevated);
-    box-shadow: var(--elev-2), var(--edge);
-}
-
-.confirm-message {
-    margin-bottom: var(--s-4);
-    color: var(--color-ink);
-    font-size: 15px;
-}
-
-.confirm-actions {
-    display: flex;
-    gap: var(--s-2);
-}
-
-.confirm-actions .btn {
-    flex: 1;
-}
-
-/* ---------- Autocomplete ---------- */
-.autocomplete-wrapper {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-}
-
-.autocomplete-list {
-    position: absolute;
-    top: calc(100% + var(--s-1));
-    left: 0;
-    right: 0;
-    z-index: 50;
-    background-color: var(--color-elevated);
-    border-radius: var(--radius);
-    max-height: 240px;
-    overflow-y: auto;
-    display: none;
-    box-shadow: var(--elev-3), var(--edge);
-}
-
-.autocomplete-list.show {
-    display: block;
-}
-
-.autocomplete-item {
-    display: flex;
-    align-items: center;
-    min-height: var(--touch-target-min);
-    padding: var(--s-2) var(--s-3);
-    cursor: pointer;
-    font-size: 15px;
-    color: var(--color-ink);
-    transition: background-color var(--motion-duration) ease;
-}
-
-.autocomplete-item:active,
-.autocomplete-item.active {
-    background-color: var(--color-surface);
-}
-
-@media (hover: hover) {
-    .autocomplete-item:hover { background-color: var(--color-surface); }
-}
-
-/* ---------- Custom dropdown (replaces native <select>, §10 checklist) ---------- */
 .custom-select {
     position: relative;
-    flex: 1;
-    min-width: 0;
+    width: 100%;
 }
 
 .custom-select-trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--s-2);
-    min-height: var(--touch-target-min);
-    padding: var(--s-2) var(--s-3);
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 400;
-    color: var(--color-ink);
-    background-color: var(--color-surface);
-    border: none;
-    border-radius: var(--radius);
-    box-shadow: var(--inset-1);
+    gap: var(--s3);
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--s4);
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r);
+    font-size: var(--t-body);
+    font-weight: 500;
     cursor: pointer;
-    transition: box-shadow var(--motion-duration) ease;
+    transition: border-color var(--dur-fast) var(--ease);
 }
 
 .custom-select.open .custom-select-trigger {
-    box-shadow: var(--inset-2);
+    border-color: var(--line-2);
+    background: var(--bg-3);
 }
 
 .custom-select-trigger .label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--fg);
 }
 
 .custom-select-trigger .placeholder {
-    color: var(--color-muted);
+    color: var(--fg-3);
+    font-weight: 400;
 }
 
+/* A plain chevron, drawn in CSS — single weight, no icon font. */
 .custom-select-trigger .arrow {
-    width: 0;
-    height: 0;
-    flex-shrink: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 5px solid var(--color-structure);
-    transition: transform var(--motion-duration) ease;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid var(--fg-3);
+    border-bottom: 1.5px solid var(--fg-3);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform var(--dur) var(--ease);
 }
 
 .custom-select.open .custom-select-trigger .arrow {
-    transform: rotate(180deg);
+    transform: translateY(1px) rotate(-135deg);
 }
 
 .custom-select-options {
     position: absolute;
-    top: calc(100% + var(--s-1));
+    top: calc(100% + var(--s1));
     left: 0;
     right: 0;
-    z-index: 60;
-    background-color: var(--color-elevated);
-    border-radius: var(--radius);
-    max-height: 240px;
+    z-index: 40;
+    max-height: 280px;
     overflow-y: auto;
-    box-shadow: var(--elev-3), var(--edge);
+    background: var(--bg-1);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r);
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.8);
     display: none;
 }
 
@@ -670,159 +498,494 @@ input[type="text"]:focus-visible,
 .custom-select-option {
     display: flex;
     align-items: center;
-    min-height: var(--touch-target-min);
-    padding: var(--s-2) var(--s-3);
+    min-height: 44px;
+    padding: 0 var(--s4);
+    font-size: var(--t-body);
+    color: var(--fg-2);
     cursor: pointer;
-    font-size: 15px;
-    color: var(--color-ink);
-    transition: background-color var(--motion-duration) ease;
+    border-bottom: 1px solid var(--line);
+}
+
+.custom-select-option:last-child {
+    border-bottom: none;
 }
 
 .custom-select-option:active,
 .custom-select-option.active {
-    background-color: var(--color-surface);
+    background: var(--bg-3);
+    color: var(--fg);
 }
 
 @media (hover: hover) {
-    .custom-select-option:hover { background-color: var(--color-surface); }
+    .custom-select-option:hover {
+        background: var(--bg-3);
+        color: var(--fg);
+    }
 }
 
-/* Selection reads from weight, not colour (§2) */
 .custom-select-option.selected {
-    font-weight: 700;
+    color: var(--volt);
+    font-weight: 600;
 }
 
 .custom-select-option.action-option {
-    color: var(--color-structure);
-    border-top: 1px solid var(--color-muted);
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    letter-spacing: var(--track-micro);
+    text-transform: uppercase;
+    color: var(--fg-3);
 }
 
-/* ---------- Session: timer bar (§5) ---------- */
-.timer-bar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+/* --------------------------------------------------------------------------
+   8. Autocomplete
+   -------------------------------------------------------------------------- */
+
+.autocomplete-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: calc(100% + var(--s1));
+    left: 0;
+    right: 0;
+    z-index: 40;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--bg-1);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r);
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.8);
+    display: none;
+}
+
+.autocomplete-list.show {
+    display: block;
+}
+
+.autocomplete-item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: var(--s-4) var(--s-4) var(--s-3);
-    background-color: var(--color-elevated);
-    /* A divider line, not a shadow, separates it from the list below (§5). */
-    border-bottom: 1px solid var(--color-muted);
-    padding-top: max(var(--s-4), env(safe-area-inset-top));
+    min-height: 44px;
+    padding: 0 var(--s4);
+    font-size: var(--t-body);
+    color: var(--fg-2);
+    cursor: pointer;
+    border-bottom: 1px solid var(--line);
 }
 
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
 
-/* Ink at rest; Accent only while running (§5) */
+.autocomplete-item:active,
+.autocomplete-item.active {
+    background: var(--bg-3);
+    color: var(--fg);
+}
+
+@media (hover: hover) {
+    .autocomplete-item:hover {
+        background: var(--bg-3);
+        color: var(--fg);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   9. Shell
+   -------------------------------------------------------------------------- */
+
+.home-container,
+.routine-container {
+    max-width: var(--shell);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    padding-top: var(--s8);
+    padding-bottom: calc(var(--s12) + 64px + env(safe-area-inset-bottom));
+}
+
+.inline-error {
+    margin-bottom: var(--s5);
+    padding: var(--s3) var(--s4);
+    background: var(--danger-tint);
+    border-left: 3px solid var(--danger);
+    border-radius: 0 var(--r) var(--r) 0;
+    color: var(--danger);
+    font-size: var(--t-sm);
+    font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   10. Home
+   -------------------------------------------------------------------------- */
+
+.home-header {
+    padding-bottom: var(--s6);
+    border-bottom: 2px solid var(--fg);
+    margin-bottom: var(--s2);
+}
+
+.home-eyebrow {
+    display: block;
+    margin-bottom: var(--s3);
+}
+
+.home-title {
+    font-size: var(--t-display);
+}
+
+.routines-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* A ruled list, not a stack of cards: the eye tracks one straight left
+   edge down the screen instead of re-finding the start of each box. */
+.routine-card {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: var(--s4);
+    padding: var(--s5) 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.routine-index {
+    align-self: center;
+    padding-top: 2px;
+}
+
+.routine-card-info {
+    min-width: 0;
+}
+
+.routine-card-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.routine-card-meta {
+    margin-top: var(--s1);
+}
+
+.routine-card-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+}
+
+.home-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: var(--s3) var(--gutter)
+        calc(var(--s3) + env(safe-area-inset-bottom));
+    background: var(--bg);
+    border-top: 1px solid var(--line-2);
+}
+
+.home-actions .btn {
+    display: flex;
+    width: 100%;
+    max-width: calc(var(--shell) - var(--gutter) * 2);
+    margin-inline: auto;
+}
+
+.empty-state {
+    padding: var(--s10) 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.empty-state-title {
+    font-size: var(--t-title);
+    font-weight: 600;
+    letter-spacing: var(--track-tight);
+    color: var(--fg-2);
+}
+
+.empty-state-hint {
+    margin-top: var(--s2);
+}
+
+/* --------------------------------------------------------------------------
+   11. Routine editor
+   -------------------------------------------------------------------------- */
+
+.routine-header {
+    padding-bottom: var(--s6);
+    border-bottom: 2px solid var(--fg);
+    margin-bottom: var(--s8);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: var(--s2);
+    transition: color var(--dur-fast) var(--ease);
+}
+
+.back-link:active {
+    color: var(--fg);
+}
+
+@media (hover: hover) {
+    .back-link:hover {
+        color: var(--fg);
+    }
+}
+
+.exercise-list {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--s4);
+}
+
+.exercise-row {
+    padding: var(--s5) 0;
+    border-top: 1px solid var(--line);
+}
+
+.exercise-row:last-child {
+    border-bottom: 1px solid var(--line);
+}
+
+.exercise-row-header {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+}
+
+.machine-group {
+    margin-top: var(--s4);
+    padding-left: var(--s4);
+    border-left: 1px solid var(--line-2);
+}
+
+.machine-group > .field-label {
+    margin-bottom: var(--s2);
+}
+
+.machine-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+}
+
+.machine-list:not(:empty) {
+    margin-bottom: var(--s3);
+}
+
+.machine-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+}
+
+.machine-row input[type="text"] {
+    min-height: 44px;
+    font-size: var(--t-sm);
+}
+
+#add-exercise-btn {
+    width: 100%;
+}
+
+.danger-zone {
+    margin-top: var(--s12);
+    padding-top: var(--s6);
+    border-top: 1px solid var(--line);
+}
+
+.danger-zone > .btn-danger {
+    width: 100%;
+}
+
+.confirm-box {
+    padding: var(--s5);
+    background: var(--bg-1);
+    border: 1px solid var(--danger);
+    border-radius: var(--r);
+}
+
+.confirm-message {
+    margin-bottom: var(--s4);
+    font-size: var(--t-sm);
+    color: var(--fg-2);
+}
+
+.confirm-actions {
+    display: flex;
+    gap: var(--s3);
+}
+
+.confirm-actions .btn {
+    flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   12. Session — the instrument panel
+   -------------------------------------------------------------------------- */
+
+/* --- Rest timer: pinned, always readable -------------------------------- */
+.timer-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s4);
+    padding: var(--s3) var(--gutter);
+    padding-top: calc(var(--s3) + env(safe-area-inset-top));
+    background: var(--bg);
+    border-bottom: 1px solid var(--line-2);
+}
+
+.timer-label {
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    font-weight: 500;
+    letter-spacing: var(--track-micro);
+    text-transform: uppercase;
+    color: var(--fg-3);
+}
+
+/* State is instant, not animated: an instrument reads now, not soon. */
+.timer-bar.running {
+    border-bottom-color: var(--volt);
+}
+
+.timer-bar.running .timer-label {
+    color: var(--volt);
+}
+
 .timer-display {
-    color: var(--color-ink);
-    transition: color var(--motion-duration) ease;
+    font-size: var(--t-timer);
+    font-weight: 500;
+    line-height: 0.92;
+    color: var(--fg-3);
 }
 
 .timer-bar.running .timer-display {
-    color: var(--color-accent);
+    color: var(--volt);
 }
 
-/* ---------- Session: content ---------- */
 .session-content {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: var(--s-6) var(--s-4);
-    /* clear the fixed complete bar */
-    padding-bottom: calc(var(--s-12) + 72px + env(safe-area-inset-bottom));
+    max-width: var(--shell);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    /* clears the fixed timer above and the fixed action bar below */
+    padding-top: calc(104px + env(safe-area-inset-top));
+    padding-bottom: calc(var(--s12) + 72px + env(safe-area-inset-bottom));
 }
 
 .session-header {
-    margin-bottom: var(--s-5);
+    padding-bottom: var(--s5);
+    border-bottom: 2px solid var(--fg);
 }
 
 .entries-list {
     display: flex;
     flex-direction: column;
-    gap: var(--s-3);
 }
 
 .entry-block {
-    padding: var(--s-4);
-    background-color: var(--color-elevated);
-    border-left: 3px solid var(--color-structure);
-    border-radius: var(--radius);
-    box-shadow: var(--elev-1), var(--edge);
+    padding: var(--s6) 0;
+    border-bottom: 1px solid var(--line);
 }
 
 .entry-header {
-    margin-bottom: var(--s-3);
+    margin-bottom: var(--s5);
+}
+
+.entry-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s3);
+    margin-bottom: var(--s3);
+}
+
+.entry-index {
+    flex: none;
+    padding-top: 2px;
 }
 
 .exercise-title {
-    color: var(--color-ink);
-    margin-bottom: var(--s-2);
-    overflow-wrap: anywhere;
-}
-
-.machine-selector {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
+    min-width: 0;
 }
 
 .new-machine-inline {
-    margin-top: var(--s-2);
+    margin-top: var(--s2);
 }
 
-/* ---------- Session: sets ----------
-   One grid definition, shared by the header and every row, so the two can
-   never drift out of alignment. Units live in the header, not the rows. */
+.new-machine-inline .machine-selector {
+    display: flex;
+    gap: var(--s2);
+}
+
+.new-machine-inline input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+}
+
+/* --- Sets grid ---------------------------------------------------------
+   One grid definition drives the header and every row, so the two can
+   never drift. Units live in the header, never repeated in each row. */
 .sets-header,
 .set-row-surface {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1.15fr) minmax(0, 1fr) 44px;
-    gap: var(--s-2);
+    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) 48px;
     align-items: center;
+    gap: var(--s2);
 }
 
 .sets-header {
-    padding-bottom: var(--s-2);
-    margin-bottom: var(--s-2);
-    border-bottom: 1px solid var(--color-muted);
+    padding-bottom: var(--s2);
+    border-bottom: 1px solid var(--line-2);
 }
 
 .sets-header span {
     text-align: center;
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .sets-header span:first-child {
     text-align: left;
 }
 
-/* Swipe-to-delete: the surface slides left to reveal the action beneath it. */
+.sets-header span:last-child {
+    text-align: center;
+}
+
 .set-row {
     position: relative;
     overflow: hidden;
-    border-radius: var(--radius);
-    margin-bottom: var(--s-2);
-    /* claim horizontal gestures, leave vertical scrolling to the page */
-    touch-action: pan-y;
+    border-bottom: 1px solid var(--line);
 }
 
 .set-row-surface {
     position: relative;
     z-index: 1;
-    min-height: var(--touch-target-min);
-    padding: 0 var(--s-1);
-    background-color: var(--color-elevated);
+    min-height: 60px;
+    padding: var(--s2) 0;
+    background: var(--bg);
     will-change: transform;
 }
 
 .set-row.snapping .set-row-surface {
-    transition: transform var(--motion-duration) ease-out;
+    transition: transform var(--dur) var(--ease);
 }
 
+/* Revealed by swiping the row left. The button stays in the DOM and in
+   the tab order, so the gesture is a shortcut, never the only route. */
 .set-row-delete {
     position: absolute;
     top: 0;
@@ -830,113 +993,108 @@ input[type="text"]:focus-visible,
     bottom: 0;
     width: 96px;
     display: flex;
-    align-items: stretch;
 }
 
 .set-delete-btn {
     flex: 1;
-    border: none;
-    border-radius: var(--radius);
-    background-color: var(--color-muted);
-    color: var(--color-ink);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--danger);
+    color: var(--danger-ink);
+    font-weight: 600;
 }
 
 .set-number {
-    font-size: 13px;
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-    color: var(--color-structure);
+    font-size: var(--t-sm);
+    font-weight: 500;
+    color: var(--fg-3);
+    text-align: left;
 }
 
 .set-input {
     width: 100%;
-    min-height: 52px;
-    padding: var(--s-1) var(--s-2);
-    color: var(--color-ink);
-    background-color: var(--color-surface);
-    border: none;
-    border-radius: var(--radius);
-    box-shadow: var(--inset-1);
-    outline: none;
+    min-height: 44px;
+    padding: 0 var(--s2);
+    background: var(--bg-2);
+    border: 1px solid transparent;
+    border-radius: var(--r);
+    color: var(--fg);
+    font-size: var(--t-num);
+    font-weight: 500;
     text-align: center;
     -moz-appearance: textfield;
     appearance: textfield;
-    transition: box-shadow var(--motion-duration) ease,
-                color var(--motion-duration) ease;
+    transition: border-color var(--dur-fast) var(--ease),
+        background-color var(--dur-fast) var(--ease);
 }
 
 .set-input::-webkit-inner-spin-button,
 .set-input::-webkit-outer-spin-button {
     -webkit-appearance: none;
-    appearance: none;
     margin: 0;
 }
 
-/* Completion toggle — a 44px target around a filled-on-check box.
-   No accent: the budget belongs to the timer (§2). */
+/* --- Completion toggle — the most-tapped control in the app ------------- */
 .set-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--touch-target-min);
-    height: var(--touch-target-min);
-    padding: 0;
-    border: none;
-    background: none;
-    cursor: pointer;
+    width: 48px;
+    height: 48px;
+    justify-self: center;
+    border-radius: var(--r);
 }
 
 .set-toggle .box {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: var(--radius);
-    background-color: var(--color-surface);
-    box-shadow: var(--inset-1), inset 0 0 0 1px var(--color-muted);
-    color: var(--color-surface);
-    transition: background-color var(--motion-duration) ease,
-                box-shadow var(--motion-duration) ease;
+    width: 28px;
+    height: 28px;
+    border: 1.5px solid var(--line-2);
+    border-radius: var(--r);
+    background: var(--bg-2);
 }
 
 .set-toggle .box svg {
-    display: block;
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
+    opacity: 0;
 }
 
-/* The check draws itself in — functional motion, well under 150ms (§7). */
 .set-toggle .box path {
-    stroke-dasharray: 26;
-    stroke-dashoffset: 26;
-    transition: stroke-dashoffset var(--motion-duration) ease-out;
+    stroke: var(--volt-ink);
 }
 
-.set-row.completed .set-toggle .box {
-    background-color: var(--color-ink);
-    box-shadow: none;
+@media (hover: hover) {
+    .set-toggle:hover .box {
+        border-color: var(--fg-3);
+    }
 }
 
-.set-row.completed .set-toggle .box path {
-    stroke-dashoffset: 0;
-}
-
-/* State legible from weight and position, never from a fade (§2) */
-.set-row.completed .set-input {
-    color: var(--color-structure);
+/* Completed state, applied instantly. Three reinforcing cues — a volt
+   edge marker, a volt index, a filled box — so it reads peripherally. */
+.set-row.completed .set-row-surface {
+    background: linear-gradient(var(--volt-tint), var(--volt-tint)), var(--bg);
+    box-shadow: inset 3px 0 0 var(--volt);
 }
 
 .set-row.completed .set-number {
-    color: var(--color-muted);
+    color: var(--volt);
+}
+
+.set-row.completed .set-toggle .box {
+    background: var(--volt);
+    border-color: var(--volt);
+}
+
+.set-row.completed .set-toggle .box svg {
+    opacity: 1;
 }
 
 .entry-actions {
-    margin-top: var(--s-3);
+    margin-top: var(--s4);
 }
 
 .entry-actions .btn {
@@ -944,62 +1102,128 @@ input[type="text"]:focus-visible,
 }
 
 .sets-empty {
-    padding: var(--s-3) 0;
-    font-size: 13px;
-    color: var(--color-structure);
+    padding: var(--s6) 0;
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    letter-spacing: var(--track-micro);
+    text-transform: uppercase;
+    color: var(--fg-3);
+    border-bottom: 1px solid var(--line);
 }
 
 .sets-hint {
-    margin-top: var(--s-4);
+    margin-top: var(--s6);
     text-align: center;
-    font-size: 12px;
-    color: var(--color-muted);
 }
 
-/* ---------- Session: complete bar (§5) ----------
-   Pinned to the bottom, full width, bold label. Carries no Accent: Copper
-   belongs to the rest timer alone on this screen. See ADR 0001. */
+/* --- Pinned primary action --------------------------------------------- */
 .complete-bar {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 200;
-    padding: var(--s-3) var(--s-4);
-    padding-bottom: max(var(--s-3), env(safe-area-inset-bottom));
-    background-color: var(--color-elevated);
-    border-top: 1px solid var(--color-muted);
+    z-index: 30;
+    padding: var(--s3) var(--gutter)
+        calc(var(--s3) + env(safe-area-inset-bottom));
+    background: var(--bg);
+    border-top: 1px solid var(--line-2);
 }
 
 .complete-bar .btn {
-    width: 100%;
-    max-width: 568px;
-    margin: 0 auto;
     display: flex;
+    width: 100%;
+    max-width: calc(var(--shell) - var(--gutter) * 2);
+    margin-inline: auto;
+    min-height: 56px;
+    font-size: 1rem;
 }
 
 .complete-bar .btn:disabled {
-    background-color: var(--color-elevated);
-    color: var(--color-muted);
-    box-shadow: var(--inset-1);
-    cursor: default;
+    background: transparent;
+    border-color: var(--line-2);
+    color: var(--fg-3);
+    opacity: 1;
 }
 
-/* ---------- Narrow phones ---------- */
-@media (max-width: 380px) {
-    .sets-header,
-    .set-row-surface {
-        grid-template-columns: 22px minmax(0, 1.15fr) minmax(0, 1fr) 44px;
-        gap: var(--s-1);
+/* --------------------------------------------------------------------------
+   13. Wider viewports
+   -------------------------------------------------------------------------- */
+
+/* The content column becomes a ruled page: side rules mark its edges so the
+   layout reads as deliberate rather than as a stretched phone. */
+@media (min-width: 760px) {
+    :root {
+        --gutter: var(--s8);
     }
 
-    .sets-header span {
-        font-size: 9px;
-        letter-spacing: 0.04em;
+    .home-container,
+    .routine-container {
+        border-inline: 1px solid var(--line);
+        min-height: 100vh;
+        padding-top: var(--s12);
+    }
+}
+
+/* Session becomes a two-part console: a fixed instrument rail on the left
+   (timer + the one primary action) and a scrolling log on the right. */
+@media (min-width: 900px) {
+    .timer-bar {
+        right: auto;
+        bottom: 0;
+        width: var(--rail);
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: var(--s3);
+        padding: var(--s12) var(--s8);
+        border-bottom: none;
+        border-right: 1px solid var(--line-2);
     }
 
-    .set-input {
-        font-size: 26px;
+    .timer-bar.running {
+        border-bottom-color: transparent;
+        border-right-color: var(--volt);
     }
 
+    .timer-display {
+        font-size: 4rem;
+    }
+
+    .complete-bar {
+        right: auto;
+        width: var(--rail);
+        z-index: 31;
+        padding: var(--s8);
+        border-top: none;
+        border-right: 1px solid var(--line-2);
+        background: transparent;
+    }
+
+    .timer-bar.running + .session-content ~ .complete-bar,
+    .complete-bar {
+        pointer-events: auto;
+    }
+
+    .session-content {
+        margin-inline: 0 auto;
+        margin-left: var(--rail);
+        max-width: calc(var(--shell) + var(--s8));
+        padding: var(--s12) var(--s8);
+        border-right: 1px solid var(--line);
+        min-height: 100vh;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   14. Reduced motion
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 1ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }
