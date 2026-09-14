@@ -929,7 +929,8 @@ input[type="text"]:focus-visible,
 }
 
 /* ---------- Session: complete bar (§5) ----------
-   Pinned to the bottom, full width, solid Accent fill, bold label. */
+   Pinned to the bottom, full width, bold label. Carries no Accent: Copper
+   belongs to the rest timer alone on this screen. See ADR 0001. */
 .complete-bar {
     position: fixed;
     left: 0;
@@ -947,14 +948,6 @@ input[type="text"]:focus-visible,
     max-width: 568px;
     margin: 0 auto;
     display: flex;
-}
-
-/* One accent per screen (§2): once the timer is running it owns the copper,
-   so the complete button steps back to Ink on Elevated. See ADR 0001. */
-body.timer-running .complete-bar .btn-accent {
-    background-color: var(--color-elevated);
-    color: var(--color-ink);
-    box-shadow: var(--elev-2), var(--edge);
 }
 
 .complete-bar .btn:disabled {

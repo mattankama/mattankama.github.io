@@ -50,10 +50,8 @@ function resetAndStartTimer() {
     timer.running = true;
     updateTimerDisplay();
 
-    // The running timer becomes the screen's single accent; the complete
-    // button steps back to Ink on Elevated. See docs/adr/0001.
+    // The running timer is the screen's only accent (ADR 0001).
     document.getElementById("timer-bar").classList.add("running");
-    document.body.classList.add("timer-running");
 
     timer.intervalId = setInterval(() => {
         timer.seconds++;
