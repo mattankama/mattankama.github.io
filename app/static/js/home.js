@@ -2,8 +2,10 @@
  * Rattlesnake — Home page logic
  * Fetches routines, renders the list, starts sessions.
  *
- * This screen carries no accent (§2): hierarchy comes from weight, size and
- * extrusion. Deleting a routine lives in the routine editor, behind a confirm.
+ * Each routine is a card: the name gets a full-width line of its own so it can
+ * never be crushed by the action beside it, and the one ember fill on the card
+ * is the action you came here to take. Deleting lives in the editor, behind a
+ * confirm.
  */
 
 document.addEventListener("DOMContentLoaded", init);
@@ -37,7 +39,7 @@ async function loadRoutines() {
                     <div class="routine-card-meta">${r.exercise_count} exercise${r.exercise_count !== 1 ? "s" : ""}</div>
                 </div>
                 <div class="routine-card-actions">
-                    <button class="btn btn-primary btn-small" data-action="start" data-id="${r.id}">Start</button>
+                    <button class="btn btn-primary" data-action="start" data-id="${r.id}">Start</button>
                     <a href="/routine/${r.id}/edit" class="btn-text">Edit</a>
                 </div>
             </div>

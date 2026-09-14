@@ -1,36 +1,36 @@
 /* ==========================================================================
-   RATTLESNAKE — Instrument Panel
-   A high-contrast, type-led dark UI. Swiss structural discipline (strict
-   grid, rules instead of cards, ruthless alignment) with an athletic
-   instrument register: monospaced tabular figures, uppercase micro-labels,
-   one high-luminance signal colour.
+   RATTLESNAKE — FORGE
+   ==========================================================================
+   A dark, material, type-led interface built on three ideas:
+
+   MASS      One variable family. Width and weight rise together with
+             importance, so hierarchy is carried by the shape of the letters
+             themselves — not by rules, boxes, or colour. Nothing is
+             uppercase-and-tracked; nothing whispers in 11px grey.
+
+   MATERIAL  Content sits on warm graphite surfaces that stack in a real
+             elevation ramp, with concentric corner radii (outer − padding =
+             inner). Controls do not sit *in* the page, they float *above* it
+             on translucent glass. Grouping is a surface, never a hairline.
+
+   HEAT      One incandescent accent, #FF7A2F, marks exactly one thing:
+             something is live or done. A running rest timer, a completed
+             set, the action that starts work.
 
    Built for a gym: read at arm's length, in bad light, one-handed, mid-set.
-   Hierarchy is carried by SIZE and WEIGHT, never by a hairline — hairlines
-   are structure, not information.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Typefaces — self-hosted, latin subset, no network required
+   1. Typeface — self-hosted, latin subset, no network at runtime
    -------------------------------------------------------------------------- */
 
 @font-face {
-    font-family: "Geist";
+    font-family: "Archivo";
     font-style: normal;
     font-weight: 100 900;
+    font-stretch: 62% 125%;
     font-display: block;
-    src: url("../fonts/geist-latin-var.woff2") format("woff2");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
-        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-@font-face {
-    font-family: "Geist Mono";
-    font-style: normal;
-    font-weight: 100 900;
-    font-display: block;
-    src: url("../fonts/geist-mono-latin-var.woff2") format("woff2");
+    src: url("../fonts/archivo-latin-var.woff2") format("woff2");
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
         U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
         U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
@@ -41,76 +41,110 @@
    -------------------------------------------------------------------------- */
 
 :root {
-    /* --- Colour ---------------------------------------------------------
-       Every text pair below is measured against its real background:
-         fg   on bg  18.13:1      fg-2 on bg   7.60:1
-         fg-3 on bg   6.07:1      volt on bg  17.33:1
-         ink  on volt 17.33:1     danger on bg 7.18:1
-       All clear WCAG AA (4.5:1) at body size. ------------------------- */
-    --bg: #08090a; /* canvas */
-    --bg-1: #101113; /* raised panel */
-    --bg-2: #17181b; /* control / input well */
-    --bg-3: #1e2024; /* pressed / hovered control */
+    /* --- Surfaces: a warm graphite elevation ramp -----------------------
+       The canvas is NOT pure black. Each step up is a real, opaque surface,
+       so a group of things reads as one object without needing a border. */
+    --canvas: #0f0e0d;
+    --surface-1: #1c1a18; /* card */
+    --surface-2: #272320; /* control / input well nested in a card */
+    --surface-3: #332e2a; /* pressed, hovered, focused control */
+    /* A completed set row sits directly above the swipe-delete panel, so this
+       has to be an opaque blend of surface-2 and ember — never an alpha tint,
+       or the delete colour reads straight through the row. */
+    --surface-done: #3d2c22;
 
-    --line: #23252a; /* hairline between rows */
-    --line-2: #33363d; /* structural rule, control border */
+    /* Material edges. A hairline here is the lit top edge of a surface,
+       not a divider between two pieces of content. */
+    --edge: rgba(255, 255, 255, 0.085);
+    --edge-strong: rgba(255, 255, 255, 0.18);
+    --specular: rgba(255, 255, 255, 0.12);
 
-    --fg: #f4f4f5; /* the numbers and names you read */
-    --fg-2: #9ca0a8; /* supporting text */
-    --fg-3: #8a8e97; /* micro-labels, units, indices */
+    /* Floating chrome. Opaque enough to stay legible over scrolling
+       numbers; translucent enough that content clearly passes beneath. */
+    --glass: rgba(24, 21, 20, 0.86);
 
-    /* One signal colour. It marks whatever is LIVE or GO right now:
-       a running rest timer, a completed set, the primary action. */
-    --volt: #d7ff3e;
-    --volt-ink: #08090a; /* text sitting on volt */
-    --volt-tint: rgba(215, 255, 62, 0.07);
-    --volt-line: rgba(215, 255, 62, 0.42);
+    /* --- Ink -------------------------------------------------------------
+       Measured against the surfaces they actually sit on:
+         ink   on surface-1  15.9:1     ink-2 on surface-1  9.1:1
+         ink-3 on surface-1   6.5:1     ink-3 on surface-2  5.9:1
+         ember on canvas      7.4:1     canvas on ember     7.4:1
+       Every pair clears WCAG AA at body size. There is no 11px grey. */
+    --ink: #f7f4f1; /* names, numbers — what you read */
+    --ink-2: #c4beb8; /* supporting copy */
+    --ink-3: #a39c95; /* units, meta, placeholders */
 
-    --danger: #ff6b6b;
-    --danger-ink: #08090a;
-    --danger-tint: rgba(255, 107, 107, 0.1);
+    /* --- Heat ------------------------------------------------------------
+       One accent. It means "live or done", nothing else. */
+    --ember: #ff7a2f;
+    --ember-ink: #14100e; /* text sitting on an ember fill */
+    --ember-tint: rgba(255, 122, 47, 0.1);
+    --ember-line: rgba(255, 122, 47, 0.38);
+    --ember-glow: rgba(255, 122, 47, 0.28);
 
-    --focus: var(--volt);
+    /* Destructive is deliberately pink-leaning so it can never be mistaken
+       for the orange accent at a glance. */
+    --danger: #ff6183;
+    --danger-tint: rgba(255, 97, 131, 0.12);
+    --danger-line: rgba(255, 97, 131, 0.35);
 
-    /* --- Type ----------------------------------------------------------- */
-    --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --focus: #ff9d63;
 
-    --t-timer: clamp(3.25rem, 15vw, 4.5rem); /* 52 → 72 */
-    --t-display: clamp(1.875rem, 7vw, 2.75rem); /* 30 → 44 */
-    --t-title: 1.3125rem; /* 21 — exercise / routine name */
-    --t-num: 1.375rem; /* 22 — weight & reps */
+    /* --- Type ------------------------------------------------------------
+       One family, two axes. Width IS the hierarchy axis. */
+    --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    --w-display: 116%; /* hero, timer, the big numbers */
+    --w-title: 106%; /* exercise and routine names */
+    --w-ui: 100%; /* everything else */
+
+    --t-hero: clamp(2.75rem, 12vw, 3.75rem); /* 44 → 60 */
+    --t-timer: clamp(2.5rem, 12.5vw, 3.25rem); /* 40 → 52 */
+    --t-h1: clamp(1.75rem, 7.5vw, 2.125rem); /* 28 → 34 */
+    --t-h2: 1.375rem; /* 22 — exercise name */
+    --t-num: 1.875rem; /* 30 — weight & reps */
     --t-body: 1rem; /* 16 — also stops iOS focus-zoom */
-    --t-sm: 0.875rem; /* 14 */
-    --t-micro: 0.6875rem; /* 11 — uppercase, tracked */
+    --t-sm: 0.9375rem; /* 15 */
+    --t-xs: 0.8125rem; /* 13 — units and meta, never smaller */
 
-    --track-micro: 0.14em;
-    --track-tight: -0.02em;
+    --lead-tight: 1.02;
+    --track-display: -0.035em;
+    --track-title: -0.02em;
 
-    /* --- Space — 4px base ----------------------------------------------- */
+    /* --- Space — 4px base ------------------------------------------------ */
     --s1: 4px;
     --s2: 8px;
     --s3: 12px;
     --s4: 16px;
     --s5: 20px;
     --s6: 24px;
+    --s7: 28px;
     --s8: 32px;
     --s10: 40px;
     --s12: 48px;
 
-    --gutter: var(--s5); /* page side padding */
+    --gutter: var(--s4);
 
-    /* --- Geometry -------------------------------------------------------- */
-    --r: 4px; /* the one radius */
-    --r-pill: 999px; /* tags only */
-    --tap: 48px; /* every tappable control ≥ this (spec min is 44) */
-    --shell: 720px; /* content column */
-    --rail: 300px; /* desktop session console */
+    /* --- Geometry — concentric: inner = outer − padding ------------------ */
+    --r-card: 26px;
+    --r-control: 16px;
+    --r-chip: 10px;
+    --r-pill: 999px;
+    --pad-card: 10px; /* 26 − 10 = 16, the inner radius */
 
-    /* --- Motion ---------------------------------------------------------- */
-    --dur: 160ms;
-    --dur-fast: 100ms;
-    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --tap: 48px;
+    --shell: 560px;
+
+    /* --- Motion — short, eased, and only where state actually changes --- */
+    --dur: 180ms;
+    --dur-fast: 110ms;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    /* A spring with a visible overshoot, for state changes that should feel
+       physical — a set landing as complete, a control taking a press. */
+    --ease-spring: linear(
+        0, 0.402 7.4%, 0.883 15.6%, 1.03 20.7%, 1.124 26.6%, 1.145 31.1%,
+        1.129 36.5%, 1.03 49.5%, 0.998 59.5%, 1.001 76.4%, 1
+    );
 }
 
 /* --------------------------------------------------------------------------
@@ -126,22 +160,46 @@
 }
 
 html {
-    background: var(--bg);
+    background: var(--canvas);
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
 }
 
 body {
-    background: var(--bg);
-    color: var(--fg);
-    font-family: var(--font-sans);
+    position: relative;
+    min-height: 100dvh;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font);
     font-size: var(--t-body);
-    font-weight: 400;
-    line-height: 1.45;
+    font-weight: 450;
+    font-stretch: var(--w-ui);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
+}
+
+/* Ambient heat behind everything. Low enough in alpha that it never moves a
+   contrast ratio; present enough that the canvas reads as a lit space. */
+.aura {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 62vh;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(
+            125% 74% at 50% -12%,
+            rgba(255, 122, 47, 0.11),
+            transparent 62%
+        ),
+        radial-gradient(
+            85% 52% at 88% 2%,
+            rgba(255, 97, 131, 0.05),
+            transparent 66%
+        );
 }
 
 button,
@@ -149,6 +207,7 @@ input,
 select,
 textarea {
     font: inherit;
+    font-stretch: inherit;
     color: inherit;
     background: none;
     border: none;
@@ -169,69 +228,68 @@ svg {
 
 :focus-visible {
     outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: var(--r);
+    outline-offset: 3px;
+    border-radius: var(--r-chip);
+}
+
+::selection {
+    background: var(--ember);
+    color: var(--ember-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 /* --------------------------------------------------------------------------
    4. Type primitives
    -------------------------------------------------------------------------- */
 
-/* The technical register: every label, unit, index and count.
-   Uppercase, monospaced, widely tracked, small, quiet. */
-.micro,
-.field-label,
-.sets-header span,
-.routine-card-meta,
-.back-link,
-.empty-state-hint,
-.set-delete-btn,
-.sets-hint,
-.home-eyebrow,
-.entry-index,
-.routine-index {
-    font-family: var(--font-mono);
-    font-size: var(--t-micro);
-    font-weight: 500;
-    letter-spacing: var(--track-micro);
-    text-transform: uppercase;
-    color: var(--fg-3);
-    line-height: 1.4;
-}
-
-/* The readout register: anything whose digits change. Geist Mono is
-   monospaced, so figures are tabular by construction and the layout
-   never shifts as a number ticks. */
-.timer-display,
-.set-input,
-.set-number {
-    font-family: var(--font-mono);
+.num {
     font-variant-numeric: tabular-nums;
-    letter-spacing: var(--track-tight);
-}
-
-h1,
-.page-title,
-.session-title,
-.home-title {
-    font-size: var(--t-display);
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    line-height: 1.02;
-    color: var(--fg);
-}
-
-.exercise-title,
-.routine-card-name {
-    font-size: var(--t-title);
-    font-weight: 600;
-    letter-spacing: var(--track-tight);
-    line-height: 1.2;
-    color: var(--fg);
+    font-feature-settings: "tnum" 1;
 }
 
 /* --------------------------------------------------------------------------
-   5. Buttons
+   5. Page shells
+   -------------------------------------------------------------------------- */
+
+.home-container,
+.routine-container,
+.session-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: var(--shell);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+}
+
+.home-container {
+    padding-block: calc(env(safe-area-inset-top, 0px) + var(--s8))
+        calc(env(safe-area-inset-bottom, 0px) + 112px);
+}
+
+.routine-container {
+    padding-block: calc(env(safe-area-inset-top, 0px) + var(--s6)) var(--s12);
+}
+
+.session-content {
+    padding-block: calc(env(safe-area-inset-top, 0px) + 104px)
+        calc(env(safe-area-inset-bottom, 0px) + 116px);
+}
+
+/* --------------------------------------------------------------------------
+   6. Buttons
+   --------------------------------------------------------------------------
+   Every button is a pill with a real minimum target. Fill = go, surface =
+   supporting, outline = quiet, tint = destructive.
    -------------------------------------------------------------------------- */
 
 .btn {
@@ -240,186 +298,194 @@ h1,
     justify-content: center;
     gap: var(--s2);
     min-height: var(--tap);
-    padding: 0 var(--s5);
-    border-radius: var(--r);
-    border: 1px solid transparent;
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    font-weight: 600;
+    padding: 0 var(--s6);
+    border-radius: var(--r-pill);
+    font-size: var(--t-body);
+    font-weight: 650;
+    font-stretch: var(--w-ui);
     letter-spacing: -0.01em;
+    line-height: 1;
+    text-align: center;
     white-space: nowrap;
-    transition: background-color var(--dur-fast) var(--ease),
-        border-color var(--dur-fast) var(--ease),
-        color var(--dur-fast) var(--ease);
+    transition:
+        transform var(--dur) var(--ease-spring),
+        border-radius var(--dur) var(--ease-spring),
+        background-color var(--dur-fast) var(--ease-in-out),
+        opacity var(--dur-fast) var(--ease-in-out);
 }
 
-/* GO — the one volt-filled control on a screen. */
-.btn-primary,
-.btn-accent {
-    background: var(--volt);
-    color: var(--volt-ink);
+/* The shape itself morphs under the thumb — a pill squares off slightly as
+   it takes the press, then springs back. */
+.btn:active:not(:disabled) {
+    transform: scale(0.97);
+    border-radius: 18px;
 }
 
-.btn-primary:active,
-.btn-accent:active {
-    background: #c2e831;
-}
-
-/* Neutral, bordered. The default for everything that isn't the main action. */
-.btn-secondary {
-    background: var(--bg-2);
-    border-color: var(--line-2);
-    color: var(--fg);
-}
-
-.btn-secondary:active {
-    background: var(--bg-3);
-}
-
-/* Quietest filled control — cancels, "+ Machine". */
-.btn-muted {
-    background: transparent;
-    border-color: var(--line-2);
-    color: var(--fg-2);
-}
-
-.btn-muted:active {
-    background: var(--bg-2);
-    color: var(--fg);
-}
-
-.btn-danger {
-    background: transparent;
-    border-color: var(--danger);
-    color: var(--danger);
-}
-
-.btn-danger:active {
-    background: var(--danger-tint);
-}
-
-/* The final, irreversible confirm is the only solid danger fill. */
-#delete-confirm-btn {
-    background: var(--danger);
-    border-color: var(--danger);
-    color: var(--danger-ink);
-}
-
-#delete-confirm-btn:active {
-    background: #ff8a8a;
+.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .btn-small {
     min-height: 44px;
-    padding: 0 var(--s4);
-    font-size: 0.875rem;
+    padding: 0 var(--s5);
+    font-size: var(--t-sm);
 }
 
-.btn:disabled {
-    opacity: 0.4;
-    cursor: default;
+/* Go. The only ember fill on a screen. */
+.btn-primary,
+.btn-accent {
+    background: var(--ember);
+    color: var(--ember-ink);
+    font-weight: 700;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 6px 20px -10px var(--ember-glow);
 }
 
-/* A text action — "Edit", "Remove". Kept to a full tap target. */
+.btn-primary:hover:not(:disabled),
+.btn-accent:hover:not(:disabled) {
+    background: #ff8c4a;
+}
+
+/* Supporting: a raised surface, not a colour. */
+.btn-secondary {
+    background: var(--surface-2);
+    color: var(--ink);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--surface-3);
+}
+
+/* Quiet: outline only. */
+.btn-muted {
+    background: transparent;
+    color: var(--ink-2);
+    box-shadow: inset 0 0 0 1px var(--edge-strong);
+}
+
+.btn-muted:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--ink);
+}
+
+.btn-danger {
+    background: var(--danger-tint);
+    color: var(--danger);
+    font-weight: 650;
+    box-shadow: inset 0 0 0 1px var(--danger-line);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: var(--danger);
+    color: var(--ember-ink);
+}
+
+/* A text-level action that still has to be a real 44px target. */
 .btn-text {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 44px;
     min-width: 44px;
-    padding: 0 var(--s2);
-    font-family: var(--font-mono);
-    font-size: var(--t-micro);
-    font-weight: 500;
-    letter-spacing: var(--track-micro);
-    text-transform: uppercase;
-    color: var(--fg-3);
-    background: none;
-    border: none;
-    transition: color var(--dur-fast) var(--ease);
+    padding: 0 var(--s4);
+    border-radius: var(--r-pill);
+    color: var(--ink-2);
+    font-size: var(--t-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 1px var(--edge-strong);
+    transition:
+        background-color var(--dur-fast) var(--ease-in-out),
+        color var(--dur-fast) var(--ease-in-out);
 }
 
-.btn-text:active {
-    color: var(--fg);
-}
-
-@media (hover: hover) {
-    .btn-text:hover {
-        color: var(--fg);
-    }
-    .btn-secondary:hover {
-        background: var(--bg-3);
-    }
-    .btn-muted:hover {
-        background: var(--bg-2);
-        color: var(--fg);
-    }
-    .btn-primary:hover,
-    .btn-accent:hover {
-        background: #e3ff63;
-    }
-    .btn-danger:hover {
-        background: var(--danger-tint);
-    }
+.btn-text:hover {
+    background: var(--surface-2);
+    color: var(--ink);
 }
 
 /* --------------------------------------------------------------------------
-   6. Forms
+   7. Floating chrome — glass bars pinned top and bottom
+   -------------------------------------------------------------------------- */
+
+.home-actions,
+.complete-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: flex;
+    justify-content: center;
+    padding: var(--s3) var(--gutter)
+        calc(env(safe-area-inset-bottom, 0px) + var(--s4));
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    backdrop-filter: blur(28px) saturate(170%);
+    border-top: 1px solid var(--edge);
+    box-shadow: inset 0 1px 0 var(--specular);
+}
+
+.home-actions .btn,
+.complete-bar .btn {
+    width: 100%;
+    max-width: var(--shell);
+}
+
+/* --------------------------------------------------------------------------
+   8. Forms
    -------------------------------------------------------------------------- */
 
 .form-group {
-    margin-bottom: var(--s8);
+    margin-bottom: var(--s6);
 }
 
+/* Sentence case, real size, real contrast. Never uppercase-and-tracked. */
 .field-label {
     display: block;
-    margin-bottom: var(--s3);
+    margin-bottom: var(--s2);
+    color: var(--ink-3);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    letter-spacing: 0;
 }
 
-.form-input,
-input[type="text"] {
+.form-input {
     display: block;
     width: 100%;
-    min-height: 52px;
-    padding: 0 var(--s4);
-    background: var(--bg-2);
-    border: 1px solid var(--line-2);
-    border-radius: var(--r);
-    color: var(--fg);
+    min-height: var(--tap);
+    padding: var(--s3) var(--s4);
+    border-radius: var(--r-control);
+    background: var(--surface-2);
+    color: var(--ink);
     font-size: var(--t-body);
-    font-weight: 500;
-    transition: border-color var(--dur-fast) var(--ease),
-        background-color var(--dur-fast) var(--ease);
+    font-weight: 550;
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+    transition:
+        background-color var(--dur-fast) var(--ease-in-out),
+        box-shadow var(--dur-fast) var(--ease-in-out);
 }
 
-input::placeholder {
-    color: var(--fg-3);
-    font-weight: 400;
-    opacity: 1;
+.form-input::placeholder {
+    color: var(--ink-3);
+    font-weight: 450;
 }
 
-.form-input:focus-visible,
-input[type="text"]:focus-visible,
-.set-input:focus-visible {
+.form-input:focus {
     outline: none;
-    border-color: var(--volt);
-    background: var(--bg-3);
-    box-shadow: 0 0 0 1px var(--volt);
-}
-
-.form-actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-    margin-top: var(--s6);
-}
-
-.form-actions .btn {
-    width: 100%;
+    background: var(--surface-3);
+    box-shadow:
+        inset 0 0 0 1px var(--ember-line),
+        0 0 0 3px var(--ember-tint);
 }
 
 /* --------------------------------------------------------------------------
-   7. Custom select (replaces native <select>)
+   9. Custom select (built by app.js — class names are load-bearing)
    -------------------------------------------------------------------------- */
 
 .custom-select {
@@ -432,63 +498,81 @@ input[type="text"]:focus-visible,
     align-items: center;
     justify-content: space-between;
     gap: var(--s3);
-    width: 100%;
     min-height: var(--tap);
     padding: 0 var(--s4);
-    background: var(--bg-2);
-    border: 1px solid var(--line-2);
-    border-radius: var(--r);
-    font-size: var(--t-body);
-    font-weight: 500;
+    border-radius: var(--r-control);
+    background: var(--surface-2);
     cursor: pointer;
-    transition: border-color var(--dur-fast) var(--ease);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+    transition:
+        background-color var(--dur-fast) var(--ease-in-out),
+        box-shadow var(--dur-fast) var(--ease-in-out);
+}
+
+.custom-select-trigger:hover {
+    background: var(--surface-3);
 }
 
 .custom-select.open .custom-select-trigger {
-    border-color: var(--line-2);
-    background: var(--bg-3);
+    background: var(--surface-3);
+    box-shadow:
+        inset 0 0 0 1px var(--ember-line),
+        0 0 0 3px var(--ember-tint);
 }
 
 .custom-select-trigger .label {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--fg);
+    color: var(--ink);
+    font-size: var(--t-body);
+    font-weight: 600;
 }
 
-.custom-select-trigger .placeholder {
-    color: var(--fg-3);
-    font-weight: 400;
+.custom-select-trigger .label.placeholder {
+    color: var(--ink-3);
+    font-weight: 500;
 }
 
-/* A plain chevron, drawn in CSS — single weight, no icon font. */
+/* A drawn chevron — no icon font, no network request. */
 .custom-select-trigger .arrow {
-    flex: none;
-    width: 8px;
-    height: 8px;
-    border-right: 1.5px solid var(--fg-3);
-    border-bottom: 1.5px solid var(--fg-3);
-    transform: translateY(-2px) rotate(45deg);
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    margin-top: -4px;
+    border-right: 2px solid var(--ink-3);
+    border-bottom: 2px solid var(--ink-3);
+    border-radius: 1px;
+    transform: rotate(45deg);
     transition: transform var(--dur) var(--ease);
 }
 
 .custom-select.open .custom-select-trigger .arrow {
-    transform: translateY(1px) rotate(-135deg);
+    margin-top: 3px;
+    transform: rotate(225deg);
+    border-color: var(--ember);
 }
 
 .custom-select-options {
     position: absolute;
-    top: calc(100% + var(--s1));
+    top: calc(100% + var(--s2));
     left: 0;
     right: 0;
-    z-index: 40;
-    max-height: 280px;
-    overflow-y: auto;
-    background: var(--bg-1);
-    border: 1px solid var(--line-2);
-    border-radius: var(--r);
-    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.8);
+    z-index: 60;
     display: none;
+    max-height: 264px;
+    overflow-y: auto;
+    padding: var(--s2);
+    border-radius: var(--r-control);
+    background: var(--surface-3);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge-strong),
+        0 24px 48px -16px rgba(0, 0, 0, 0.85);
 }
 
 .custom-select.open .custom-select-options {
@@ -499,66 +583,260 @@ input[type="text"]:focus-visible,
     display: flex;
     align-items: center;
     min-height: 44px;
-    padding: 0 var(--s4);
+    padding: 0 var(--s3);
+    border-radius: var(--r-chip);
+    color: var(--ink-2);
     font-size: var(--t-body);
-    color: var(--fg-2);
+    font-weight: 550;
     cursor: pointer;
-    border-bottom: 1px solid var(--line);
 }
 
-.custom-select-option:last-child {
-    border-bottom: none;
-}
-
-.custom-select-option:active,
-.custom-select-option.active {
-    background: var(--bg-3);
-    color: var(--fg);
-}
-
-@media (hover: hover) {
-    .custom-select-option:hover {
-        background: var(--bg-3);
-        color: var(--fg);
-    }
+.custom-select-option.active,
+.custom-select-option:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--ink);
 }
 
 .custom-select-option.selected {
-    color: var(--volt);
-    font-weight: 600;
+    color: var(--ember);
+    font-weight: 700;
 }
 
 .custom-select-option.action-option {
-    font-family: var(--font-mono);
-    font-size: var(--t-micro);
-    letter-spacing: var(--track-micro);
-    text-transform: uppercase;
-    color: var(--fg-3);
+    margin-top: var(--s1);
+    color: var(--ink-3);
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 var(--edge);
+    border-radius: 0 0 var(--r-chip) var(--r-chip);
+}
+
+.custom-select-option.action-option:hover {
+    color: var(--ink);
 }
 
 /* --------------------------------------------------------------------------
-   8. Autocomplete
+   10. Inline error
    -------------------------------------------------------------------------- */
+
+.inline-error {
+    margin-bottom: var(--s4);
+    padding: var(--s3) var(--s4);
+    border-radius: var(--r-control);
+    background: var(--danger-tint);
+    color: var(--danger);
+    font-size: var(--t-sm);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--danger-line);
+}
+
+/* --------------------------------------------------------------------------
+   11. Empty state
+   -------------------------------------------------------------------------- */
+
+.empty-state {
+    padding: var(--s10) var(--s6);
+    border-radius: var(--r-card);
+    background: var(--surface-1);
+    text-align: center;
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+}
+
+.empty-state-title {
+    margin-bottom: var(--s2);
+    color: var(--ink);
+    font-size: var(--t-h2);
+    font-weight: 700;
+    font-stretch: var(--w-title);
+    letter-spacing: var(--track-title);
+}
+
+.empty-state-hint {
+    color: var(--ink-2);
+    font-size: var(--t-sm);
+}
+
+/* ==========================================================================
+   12. HOME — routines as full-width objects, not a cramped list row
+   ========================================================================== */
+
+.home-header {
+    margin-bottom: var(--s7);
+}
+
+.home-title {
+    font-size: var(--t-hero);
+    font-weight: 800;
+    font-stretch: var(--w-display);
+    letter-spacing: var(--track-display);
+    line-height: var(--lead-tight);
+}
+
+.home-subtitle {
+    margin-top: var(--s2);
+    color: var(--ink-2);
+    font-size: var(--t-sm);
+}
+
+.routines-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+}
+
+/* A routine is a card. The name gets its own full-width line, so it can
+   never be crushed by a sibling button — the failure this layout replaces. */
+.routine-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+    padding: var(--s5) var(--s5) var(--s4);
+    border-radius: var(--r-card);
+    background: var(--surface-1);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+}
+
+.routine-card-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s2);
+    min-width: 0; /* flex children must be allowed to shrink */
+}
+
+.routine-card-name {
+    width: 100%;
+    min-width: 0;
+    color: var(--ink);
+    font-size: var(--t-h1);
+    font-weight: 750;
+    font-stretch: var(--w-title);
+    letter-spacing: var(--track-title);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+/* The count is a chip, so it reads as an attribute of the routine rather
+   than as a caption floating under the name. */
+.routine-card-meta {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 5px var(--s3);
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    color: var(--ink-3);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.routine-card-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+}
+
+.routine-card-actions .btn-primary {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.routine-card-actions .btn-text {
+    flex: 0 0 auto;
+}
+
+/* ==========================================================================
+   13. ROUTINE EDITOR
+   ========================================================================== */
+
+.routine-header {
+    margin-bottom: var(--s6);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-left: calc(var(--s3) * -1);
+    padding: 0 var(--s3);
+    border-radius: var(--r-pill);
+    color: var(--ink-2);
+    font-size: var(--t-sm);
+    font-weight: 600;
+}
+
+.back-link:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.page-title {
+    margin-top: var(--s2);
+    font-size: var(--t-h1);
+    font-weight: 800;
+    font-stretch: var(--w-display);
+    letter-spacing: var(--track-display);
+    line-height: var(--lead-tight);
+}
+
+.exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    margin-bottom: var(--s3);
+}
+
+/* Each exercise is its own card; its machines are visibly nested inside it. */
+.exercise-row {
+    padding: var(--s4);
+    border-radius: var(--r-card);
+    background: var(--surface-1);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+}
+
+.exercise-row-header {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+}
 
 .autocomplete-wrapper {
     position: relative;
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+}
+
+.exercise-name-input {
+    font-weight: 650;
+}
+
+.exercise-row-header .btn-text {
+    flex: 0 0 auto;
 }
 
 .autocomplete-list {
     position: absolute;
-    top: calc(100% + var(--s1));
+    top: calc(100% + var(--s2));
     left: 0;
     right: 0;
-    z-index: 40;
-    max-height: 220px;
-    overflow-y: auto;
-    background: var(--bg-1);
-    border: 1px solid var(--line-2);
-    border-radius: var(--r);
-    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.8);
+    z-index: 60;
     display: none;
+    max-height: 232px;
+    overflow-y: auto;
+    padding: var(--s2);
+    border-radius: var(--r-control);
+    background: var(--surface-3);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge-strong),
+        0 24px 48px -16px rgba(0, 0, 0, 0.85);
 }
 
 .autocomplete-list.show {
@@ -569,206 +847,26 @@ input[type="text"]:focus-visible,
     display: flex;
     align-items: center;
     min-height: 44px;
-    padding: 0 var(--s4);
+    padding: 0 var(--s3);
+    border-radius: var(--r-chip);
+    color: var(--ink-2);
     font-size: var(--t-body);
-    color: var(--fg-2);
+    font-weight: 550;
     cursor: pointer;
-    border-bottom: 1px solid var(--line);
 }
 
-.autocomplete-item:last-child {
-    border-bottom: none;
+.autocomplete-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--ink);
 }
 
-.autocomplete-item:active,
-.autocomplete-item.active {
-    background: var(--bg-3);
-    color: var(--fg);
-}
-
-@media (hover: hover) {
-    .autocomplete-item:hover {
-        background: var(--bg-3);
-        color: var(--fg);
-    }
-}
-
-/* --------------------------------------------------------------------------
-   9. Shell
-   -------------------------------------------------------------------------- */
-
-.home-container,
-.routine-container {
-    max-width: var(--shell);
-    margin-inline: auto;
-    padding-inline: var(--gutter);
-    padding-top: var(--s8);
-    padding-bottom: calc(var(--s12) + 64px + env(safe-area-inset-bottom));
-}
-
-.inline-error {
-    margin-bottom: var(--s5);
-    padding: var(--s3) var(--s4);
-    background: var(--danger-tint);
-    border-left: 3px solid var(--danger);
-    border-radius: 0 var(--r) var(--r) 0;
-    color: var(--danger);
-    font-size: var(--t-sm);
-    font-weight: 500;
-}
-
-/* --------------------------------------------------------------------------
-   10. Home
-   -------------------------------------------------------------------------- */
-
-.home-header {
-    padding-bottom: var(--s6);
-    border-bottom: 2px solid var(--fg);
-    margin-bottom: var(--s2);
-}
-
-.home-eyebrow {
-    display: block;
-    margin-bottom: var(--s3);
-}
-
-.home-title {
-    font-size: var(--t-display);
-}
-
-.routines-list {
-    display: flex;
-    flex-direction: column;
-}
-
-/* A ruled list, not a stack of cards: the eye tracks one straight left
-   edge down the screen instead of re-finding the start of each box. */
-.routine-card {
-    display: grid;
-    grid-template-columns: 28px 1fr auto;
-    align-items: center;
-    gap: var(--s4);
-    padding: var(--s5) 0;
-    border-bottom: 1px solid var(--line);
-}
-
-.routine-index {
-    align-self: center;
-    padding-top: 2px;
-}
-
-.routine-card-info {
-    min-width: 0;
-}
-
-.routine-card-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.routine-card-meta {
-    margin-top: var(--s1);
-}
-
-.routine-card-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-}
-
-.home-actions {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 30;
-    padding: var(--s3) var(--gutter)
-        calc(var(--s3) + env(safe-area-inset-bottom));
-    background: var(--bg);
-    border-top: 1px solid var(--line-2);
-}
-
-.home-actions .btn {
-    display: flex;
-    width: 100%;
-    max-width: calc(var(--shell) - var(--gutter) * 2);
-    margin-inline: auto;
-}
-
-.empty-state {
-    padding: var(--s10) 0;
-    border-bottom: 1px solid var(--line);
-}
-
-.empty-state-title {
-    font-size: var(--t-title);
-    font-weight: 600;
-    letter-spacing: var(--track-tight);
-    color: var(--fg-2);
-}
-
-.empty-state-hint {
-    margin-top: var(--s2);
-}
-
-/* --------------------------------------------------------------------------
-   11. Routine editor
-   -------------------------------------------------------------------------- */
-
-.routine-header {
-    padding-bottom: var(--s6);
-    border-bottom: 2px solid var(--fg);
-    margin-bottom: var(--s8);
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    margin-bottom: var(--s2);
-    transition: color var(--dur-fast) var(--ease);
-}
-
-.back-link:active {
-    color: var(--fg);
-}
-
-@media (hover: hover) {
-    .back-link:hover {
-        color: var(--fg);
-    }
-}
-
-.exercise-list {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: var(--s4);
-}
-
-.exercise-row {
-    padding: var(--s5) 0;
-    border-top: 1px solid var(--line);
-}
-
-.exercise-row:last-child {
-    border-bottom: 1px solid var(--line);
-}
-
-.exercise-row-header {
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-}
-
+/* Machines sit in a well pressed into the exercise card. */
 .machine-group {
-    margin-top: var(--s4);
-    padding-left: var(--s4);
-    border-left: 1px solid var(--line-2);
-}
-
-.machine-group > .field-label {
-    margin-bottom: var(--s2);
+    margin-top: var(--s3);
+    padding: var(--s3);
+    border-radius: var(--r-control);
+    background: rgba(0, 0, 0, 0.26);
+    box-shadow: inset 0 0 0 1px var(--edge);
 }
 
 .machine-list {
@@ -778,7 +876,7 @@ input[type="text"]:focus-visible,
 }
 
 .machine-list:not(:empty) {
-    margin-bottom: var(--s3);
+    margin-bottom: var(--s2);
 }
 
 .machine-row {
@@ -787,139 +885,213 @@ input[type="text"]:focus-visible,
     gap: var(--s2);
 }
 
-.machine-row input[type="text"] {
+.machine-name-input {
+    flex: 1 1 auto;
+    min-width: 0;
     min-height: 44px;
+    padding: 0 var(--s3);
+    border-radius: var(--r-chip);
+    background: var(--surface-2);
+    color: var(--ink);
     font-size: var(--t-sm);
+    font-weight: 550;
+    box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.machine-name-input::placeholder {
+    color: var(--ink-3);
+    font-weight: 450;
+}
+
+.machine-name-input:focus {
+    outline: none;
+    background: var(--surface-3);
+    box-shadow:
+        inset 0 0 0 1px var(--ember-line),
+        0 0 0 3px var(--ember-tint);
+}
+
+.machine-row .btn-text {
+    flex: 0 0 auto;
 }
 
 #add-exercise-btn {
     width: 100%;
 }
 
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+    margin-top: var(--s8);
+}
+
+.form-actions .btn {
+    width: 100%;
+}
+
 .danger-zone {
     margin-top: var(--s12);
     padding-top: var(--s6);
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--edge);
 }
 
-.danger-zone > .btn-danger {
+.danger-zone .btn-danger {
     width: 100%;
 }
 
 .confirm-box {
-    padding: var(--s5);
-    background: var(--bg-1);
-    border: 1px solid var(--danger);
-    border-radius: var(--r);
+    padding: var(--s4);
+    border-radius: var(--r-card);
+    background: var(--danger-tint);
+    box-shadow: inset 0 0 0 1px var(--danger-line);
 }
 
 .confirm-message {
     margin-bottom: var(--s4);
+    color: var(--ink);
     font-size: var(--t-sm);
-    color: var(--fg-2);
+    font-weight: 600;
 }
 
 .confirm-actions {
     display: flex;
-    gap: var(--s3);
+    gap: var(--s2);
 }
 
 .confirm-actions .btn {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
-/* --------------------------------------------------------------------------
-   12. Session — the instrument panel
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   14. SESSION — the working screen
+   ========================================================================== */
 
-/* --- Rest timer: pinned, always readable -------------------------------- */
+/* --- The rest timer: a glass capsule floating over the content ----------- */
+
 .timer-bar {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 30;
+    inset: 0 0 auto 0;
+    z-index: 50;
     display: flex;
-    align-items: center;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--s3)) var(--gutter)
+        var(--s2);
+    pointer-events: none;
+}
+
+.timer-shell {
+    display: flex;
+    align-items: baseline;
     justify-content: space-between;
     gap: var(--s4);
-    padding: var(--s3) var(--gutter);
-    padding-top: calc(var(--s3) + env(safe-area-inset-top));
-    background: var(--bg);
-    border-bottom: 1px solid var(--line-2);
+    width: 100%;
+    max-width: var(--shell);
+    padding: var(--s2) var(--s5) var(--s3);
+    border-radius: var(--r-pill);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    backdrop-filter: blur(28px) saturate(170%);
+    pointer-events: auto;
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge),
+        0 20px 44px -20px rgba(0, 0, 0, 0.95);
+    transition:
+        box-shadow var(--dur) var(--ease),
+        background-color var(--dur) var(--ease);
 }
 
 .timer-label {
-    font-family: var(--font-mono);
-    font-size: var(--t-micro);
-    font-weight: 500;
-    letter-spacing: var(--track-micro);
-    text-transform: uppercase;
-    color: var(--fg-3);
-}
-
-/* State is instant, not animated: an instrument reads now, not soon. */
-.timer-bar.running {
-    border-bottom-color: var(--volt);
-}
-
-.timer-bar.running .timer-label {
-    color: var(--volt);
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: var(--t-xs);
+    font-weight: 650;
+    transition: color var(--dur) var(--ease);
 }
 
 .timer-display {
+    flex: 0 0 auto;
+    color: var(--ink-2);
     font-size: var(--t-timer);
-    font-weight: 500;
-    line-height: 0.92;
-    color: var(--fg-3);
+    font-weight: 700;
+    font-stretch: var(--w-display);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--track-display);
+    line-height: var(--lead-tight);
+    transition: color var(--dur) var(--ease);
+}
+
+/* Running is the one moment the accent appears at the top of the screen. */
+.timer-bar.running .timer-shell {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 190, 150, 0.22),
+        inset 0 0 0 1px var(--ember-line),
+        0 20px 44px -20px rgba(0, 0, 0, 0.95),
+        0 0 44px -14px var(--ember-glow);
 }
 
 .timer-bar.running .timer-display {
-    color: var(--volt);
+    color: var(--ember);
 }
 
-.session-content {
-    max-width: var(--shell);
-    margin-inline: auto;
-    padding-inline: var(--gutter);
-    /* clears the fixed timer above and the fixed action bar below */
-    padding-top: calc(104px + env(safe-area-inset-top));
-    padding-bottom: calc(var(--s12) + 72px + env(safe-area-inset-bottom));
+.timer-bar.running .timer-label {
+    color: var(--ember);
 }
+
+/* --- Session header ------------------------------------------------------ */
 
 .session-header {
-    padding-bottom: var(--s5);
-    border-bottom: 2px solid var(--fg);
+    margin-bottom: var(--s5);
 }
+
+.session-title {
+    font-size: var(--t-h1);
+    font-weight: 800;
+    font-stretch: var(--w-display);
+    letter-spacing: var(--track-display);
+    line-height: var(--lead-tight);
+    overflow-wrap: anywhere;
+}
+
+/* --- One exercise = one card -------------------------------------------- */
 
 .entries-list {
     display: flex;
     flex-direction: column;
+    gap: var(--s3);
 }
 
 .entry-block {
-    padding: var(--s6) 0;
-    border-bottom: 1px solid var(--line);
+    padding: var(--pad-card);
+    border-radius: var(--r-card);
+    background: var(--surface-1);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
 }
 
 .entry-header {
-    margin-bottom: var(--s5);
-}
-
-.entry-title-row {
-    display: flex;
-    align-items: baseline;
-    gap: var(--s3);
-    margin-bottom: var(--s3);
-}
-
-.entry-index {
-    flex: none;
-    padding-top: 2px;
+    padding: var(--s3) var(--s3) 0;
 }
 
 .exercise-title {
-    min-width: 0;
+    margin-bottom: var(--s3);
+    color: var(--ink);
+    font-size: var(--t-h2);
+    font-weight: 750;
+    font-stretch: var(--w-title);
+    letter-spacing: var(--track-title);
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.machine-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
 }
 
 .new-machine-inline {
@@ -927,56 +1099,107 @@ input[type="text"]:focus-visible,
 }
 
 .new-machine-inline .machine-selector {
-    display: flex;
-    gap: var(--s2);
+    flex-wrap: wrap;
 }
 
-.new-machine-inline input[type="text"] {
-    flex: 1;
+.new-machine-inline input {
+    flex: 1 1 100%;
+    min-height: var(--tap);
+    padding: 0 var(--s4);
+    border-radius: var(--r-control);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: var(--t-body);
+    font-weight: 550;
+    box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.new-machine-inline input::placeholder {
+    color: var(--ink-3);
+    font-weight: 450;
+}
+
+.new-machine-inline input:focus {
+    outline: none;
+    background: var(--surface-3);
+    box-shadow:
+        inset 0 0 0 1px var(--ember-line),
+        0 0 0 3px var(--ember-tint);
+}
+
+.new-machine-inline .btn {
+    flex: 1 1 0;
     min-width: 0;
-    min-height: 44px;
 }
 
-/* --- Sets grid ---------------------------------------------------------
-   One grid definition drives the header and every row, so the two can
-   never drift. Units live in the header, never repeated in each row. */
-.sets-header,
-.set-row-surface {
-    display: grid;
-    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) 48px;
-    align-items: center;
-    gap: var(--s2);
+/* --- Sets ---------------------------------------------------------------- */
+
+.sets-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    margin-top: var(--s3);
 }
 
-.sets-header {
-    padding-bottom: var(--s2);
-    border-bottom: 1px solid var(--line-2);
-}
-
-.sets-header span {
+.sets-empty {
+    padding: var(--s5) var(--s4);
+    border-radius: var(--r-control);
+    background: rgba(0, 0, 0, 0.26);
+    color: var(--ink-3);
+    font-size: var(--t-sm);
+    font-weight: 550;
     text-align: center;
+    box-shadow: inset 0 0 0 1px var(--edge);
 }
 
-.sets-header span:first-child {
-    text-align: left;
-}
-
-.sets-header span:last-child {
-    text-align: center;
-}
-
+/*
+ * A set row is a sliding surface over a fixed delete action. The surface is
+ * the thing you read: index chip, then the lift written the way a lifter
+ * writes it — 185 lb x 8 — then one big completion target.
+ */
 .set-row {
     position: relative;
+    border-radius: var(--r-control);
     overflow: hidden;
-    border-bottom: 1px solid var(--line);
+}
+
+/*
+ * The delete action is a rounded panel parked behind the right-hand edge of
+ * the surface. It is inset from the row so that the surface's antialiased
+ * corner arc always has dark behind it — sitting flush, its colour bleeds
+ * through the curve as a one-pixel seam.
+ */
+.set-row-delete {
+    position: absolute;
+    inset: 3px 3px 3px auto;
+    display: flex;
+    align-items: stretch;
+    width: 90px; /* revealed inside SWIPE_WIDTH (96px) in session.js */
+    border-radius: var(--r-chip);
+    background: var(--danger);
+}
+
+.set-delete-btn {
+    flex: 1 1 auto;
+    color: var(--ember-ink);
+    font-size: var(--t-sm);
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .set-row-surface {
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    /* Tight: the gaps here are the budget that lets a four-digit weight and a
+       three-digit rep count coexist on a 390px row without compressing. */
+    gap: 5px;
     min-height: 60px;
-    padding: var(--s2) 0;
-    background: var(--bg);
+    padding: var(--s2) var(--s2) var(--s2) var(--s3);
+    border-radius: var(--r-control);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--edge);
     will-change: transform;
 }
 
@@ -984,246 +1207,247 @@ input[type="text"]:focus-visible,
     transition: transform var(--dur) var(--ease);
 }
 
-/* Revealed by swiping the row left. The button stays in the DOM and in
-   the tab order, so the gesture is a shortcut, never the only route. */
-.set-row-delete {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 96px;
-    display: flex;
-}
-
-.set-delete-btn {
-    flex: 1;
-    display: flex;
+.set-number {
+    flex: 0 0 auto;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--danger);
-    color: var(--danger-ink);
-    font-weight: 600;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-pill);
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--ink-3);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
 
-.set-number {
-    font-size: var(--t-sm);
-    font-weight: 500;
-    color: var(--fg-3);
-    text-align: left;
+/* A measure is one number plus its unit, locked to the number's baseline. */
+.set-measure {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    min-width: 0;
 }
 
 .set-input {
-    width: 100%;
+    width: 3.4ch;
+    min-width: 0;
+    /* The number IS the control, so it has to carry the 44px target itself. */
     min-height: 44px;
-    padding: 0 var(--s2);
-    background: var(--bg-2);
-    border: 1px solid transparent;
-    border-radius: var(--r);
-    color: var(--fg);
+    padding: 7px 0;
+    background: none;
+    color: var(--ink);
     font-size: var(--t-num);
-    font-weight: 500;
-    text-align: center;
-    -moz-appearance: textfield;
+    font-weight: 700;
+    font-stretch: var(--w-display);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: var(--track-title);
+    line-height: 1.1;
+    text-align: right;
     appearance: textfield;
-    transition: border-color var(--dur-fast) var(--ease),
-        background-color var(--dur-fast) var(--ease);
+    -moz-appearance: textfield;
+    transition: color var(--dur-fast) var(--ease-in-out);
 }
 
-.set-input::-webkit-inner-spin-button,
-.set-input::-webkit-outer-spin-button {
+.set-measure-weight .set-input {
+    width: 4.2ch;
+}
+
+/*
+ * Where it is supported, the number box is exactly as wide as the number in
+ * it — 8 takes one digit's worth of room, 102.5 takes five. The fixed widths
+ * above stay as the fallback. Caps stop a pathological value from pushing the
+ * completion target off the row.
+ */
+@supports (field-sizing: content) {
+    .set-input {
+        width: auto;
+        field-sizing: content;
+        /* Never narrower than the 44px tap target, even for a single digit. */
+        min-width: 2.7ch;
+        max-width: 4.3ch; /* fits a three-digit rep count */
+    }
+
+    .set-measure-weight .set-input {
+        width: auto;
+        max-width: 6.3ch; /* fits a four-digit weight with a half-plate */
+    }
+}
+
+.set-input::-webkit-outer-spin-button,
+.set-input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-/* --- Completion toggle — the most-tapped control in the app ------------- */
+.set-input:focus {
+    outline: none;
+    color: var(--ember);
+}
+
+.set-unit {
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: var(--t-xs);
+    font-weight: 600;
+}
+
+.set-times {
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: var(--t-sm);
+    font-weight: 500;
+}
+
+/* The completion target is the largest thing you can hit in a row. */
 .set-toggle {
-    display: flex;
+    flex: 0 0 auto;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 48px;
     height: 48px;
-    justify-self: center;
-    border-radius: var(--r);
+    margin-left: auto;
+    border-radius: var(--r-chip);
 }
 
 .set-toggle .box {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: 1.5px solid var(--line-2);
-    border-radius: var(--r);
-    background: var(--bg-2);
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+    background: transparent;
+    color: transparent;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.26);
+    transition:
+        background-color var(--dur) var(--ease),
+        box-shadow var(--dur) var(--ease),
+        border-radius var(--dur) var(--ease-spring),
+        transform var(--dur) var(--ease-spring),
+        color var(--dur) var(--ease);
+}
+
+.set-toggle:active .box {
+    transform: scale(0.88);
+    border-radius: var(--r-pill);
 }
 
 .set-toggle .box svg {
-    width: 18px;
-    height: 18px;
-    opacity: 0;
+    width: 19px;
+    height: 19px;
 }
 
-.set-toggle .box path {
-    stroke: var(--volt-ink);
+.set-toggle:hover .box {
+    box-shadow: inset 0 0 0 2px var(--ink-3);
 }
 
-@media (hover: hover) {
-    .set-toggle:hover .box {
-        border-color: var(--fg-3);
-    }
-}
-
-/* Completed state, applied instantly. Three reinforcing cues — a volt
-   edge marker, a volt index, a filled box — so it reads peripherally. */
+/* Done: the row lifts into the accent. The numbers stay fully legible —
+   a finished set is still information you need. */
 .set-row.completed .set-row-surface {
-    background: linear-gradient(var(--volt-tint), var(--volt-tint)), var(--bg);
-    box-shadow: inset 3px 0 0 var(--volt);
+    background: var(--surface-done);
+    box-shadow: inset 0 0 0 1px var(--ember-line);
 }
 
+/* The index brightens rather than inverting: on the lighter done surface an
+   inverted chip drops under 4.5:1, and the row still has to be readable. */
 .set-row.completed .set-number {
-    color: var(--volt);
+    color: var(--ink);
 }
 
 .set-row.completed .set-toggle .box {
-    background: var(--volt);
-    border-color: var(--volt);
+    background: var(--ember);
+    color: var(--ember-ink);
+    border-radius: 16px; /* the shape morphs as the set lands */
+    box-shadow: inset 0 0 0 2px var(--ember);
 }
 
-.set-row.completed .set-toggle .box svg {
-    opacity: 1;
-}
+/* --- Add set / hint ------------------------------------------------------ */
 
 .entry-actions {
-    margin-top: var(--s4);
+    margin-top: var(--s2);
 }
 
 .entry-actions .btn {
     width: 100%;
+    background: transparent;
+    color: var(--ink-2);
+    box-shadow: inset 0 0 0 1px var(--edge-strong);
 }
 
-.sets-empty {
-    padding: var(--s6) 0;
-    font-family: var(--font-mono);
-    font-size: var(--t-micro);
-    letter-spacing: var(--track-micro);
-    text-transform: uppercase;
-    color: var(--fg-3);
-    border-bottom: 1px solid var(--line);
+.entry-actions .btn:hover {
+    background: var(--surface-2);
+    color: var(--ink);
 }
 
 .sets-hint {
-    margin-top: var(--s6);
+    margin-top: var(--s5);
+    color: var(--ink-3);
+    font-size: var(--t-xs);
     text-align: center;
 }
 
-/* --- Pinned primary action --------------------------------------------- */
-.complete-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 30;
-    padding: var(--s3) var(--gutter)
-        calc(var(--s3) + env(safe-area-inset-bottom));
-    background: var(--bg);
-    border-top: 1px solid var(--line-2);
-}
+/* --------------------------------------------------------------------------
+   14b. Glass is a preference, not a requirement
+   --------------------------------------------------------------------------
+   Anyone who has asked their OS to cut transparency gets the same layout on
+   a flat opaque surface. Nothing moves; only the material changes.
+   -------------------------------------------------------------------------- */
 
-.complete-bar .btn {
-    display: flex;
-    width: 100%;
-    max-width: calc(var(--shell) - var(--gutter) * 2);
-    margin-inline: auto;
-    min-height: 56px;
-    font-size: 1rem;
-}
-
-.complete-bar .btn:disabled {
-    background: transparent;
-    border-color: var(--line-2);
-    color: var(--fg-3);
-    opacity: 1;
+@media (prefers-reduced-transparency: reduce) {
+    .timer-shell,
+    .home-actions,
+    .complete-bar {
+        background: #181514;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 /* --------------------------------------------------------------------------
-   13. Wider viewports
+   15. Wider screens — the shell simply centres; nothing changes anatomy
    -------------------------------------------------------------------------- */
 
-/* The content column becomes a ruled page: side rules mark its edges so the
-   layout reads as deliberate rather than as a stretched phone. */
-@media (min-width: 760px) {
+@media (min-width: 620px) {
     :root {
-        --gutter: var(--s8);
+        --gutter: var(--s6);
     }
 
-    .home-container,
-    .routine-container {
-        border-inline: 1px solid var(--line);
-        min-height: 100vh;
-        padding-top: var(--s12);
-    }
-}
-
-/* Session becomes a two-part console: a fixed instrument rail on the left
-   (timer + the one primary action) and a scrolling log on the right. */
-@media (min-width: 900px) {
-    .timer-bar {
-        right: auto;
-        bottom: 0;
-        width: var(--rail);
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-start;
-        gap: var(--s3);
-        padding: var(--s12) var(--s8);
-        border-bottom: none;
-        border-right: 1px solid var(--line-2);
+    .form-actions {
+        flex-direction: row-reverse;
+        justify-content: flex-end;
     }
 
-    .timer-bar.running {
-        border-bottom-color: transparent;
-        border-right-color: var(--volt);
+    .form-actions .btn {
+        width: auto;
+        min-width: 160px;
     }
 
-    .timer-display {
-        font-size: 4rem;
-    }
-
-    .complete-bar {
-        right: auto;
-        width: var(--rail);
-        z-index: 31;
-        padding: var(--s8);
-        border-top: none;
-        border-right: 1px solid var(--line-2);
-        background: transparent;
-    }
-
-    .timer-bar.running + .session-content ~ .complete-bar,
-    .complete-bar {
-        pointer-events: auto;
-    }
-
-    .session-content {
-        margin-inline: 0 auto;
-        margin-left: var(--rail);
-        max-width: calc(var(--shell) + var(--s8));
-        padding: var(--s12) var(--s8);
-        border-right: 1px solid var(--line);
-        min-height: 100vh;
+    .danger-zone .btn-danger {
+        width: auto;
+        min-width: 200px;
     }
 }
 
-/* --------------------------------------------------------------------------
-   14. Reduced motion
-   -------------------------------------------------------------------------- */
+/* Narrow phones: the numbers are protected before anything else. The "x"
+   already says the second figure is reps, so that unit is the first to go. */
+@media (max-width: 379px) {
+    .set-measure-reps .set-unit {
+        display: none;
+    }
+}
 
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        transition-duration: 1ms !important;
-        animation-duration: 1ms !important;
-        animation-iteration-count: 1 !important;
+@media (max-width: 359px) {
+    :root {
+        --t-num: 1.5rem;
+        --gutter: var(--s3);
+    }
+
+    .set-row-surface {
+        gap: var(--s1);
     }
 }

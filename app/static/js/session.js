@@ -151,8 +151,9 @@ function renderEntries(entries) {
 }
 
 /**
- * One grid definition drives both the header and every row, so the two can
- * never drift. Units live in the header, not in each row (§4).
+ * A set is written the way a lifter writes it — 185 lb x 8 reps — so the
+ * units travel with their own number and there is no column header to drift
+ * out of sync with the rows beneath it.
  *
  * Each row is a surface that slides left to reveal its delete action. The
  * button stays in the DOM and in the tab order, so the gesture is a shortcut
@@ -163,14 +164,7 @@ function renderSetsHTML(sets) {
         return '<div class="sets-empty">Select a machine to load sets</div>';
     }
 
-    let html = `
-        <div class="sets-header">
-            <span>Set</span>
-            <span>Weight (lbs)</span>
-            <span>Reps</span>
-            <span>Done</span>
-        </div>
-    `;
+    let html = "";
 
     sets.forEach((s, i) => {
         html += `
@@ -181,19 +175,26 @@ function renderSetsHTML(sets) {
                 </div>
                 <div class="set-row-surface">
                     <span class="set-number">${i + 1}</span>
-                    <input type="number" class="set-input" inputmode="decimal" min="0" step="any"
-                           value="${s.weight}" aria-label="Set ${i + 1} weight in pounds"
-                           data-field="weight">
-                    <input type="number" class="set-input" inputmode="numeric" min="0"
-                           value="${s.reps}" aria-label="Set ${i + 1} reps"
-                           data-field="reps">
+                    <div class="set-measure set-measure-weight">
+                        <input type="number" class="set-input" inputmode="decimal" min="0" step="any"
+                               value="${s.weight}" aria-label="Set ${i + 1} weight in pounds"
+                               data-field="weight">
+                        <span class="set-unit" aria-hidden="true">lb</span>
+                    </div>
+                    <span class="set-times" aria-hidden="true">&times;</span>
+                    <div class="set-measure set-measure-reps">
+                        <input type="number" class="set-input" inputmode="numeric" min="0"
+                               value="${s.reps}" aria-label="Set ${i + 1} reps"
+                               data-field="reps">
+                        <span class="set-unit" aria-hidden="true">reps</span>
+                    </div>
                     <button class="set-toggle" role="checkbox" data-act="toggle"
                             aria-checked="${s.completed ? "true" : "false"}"
                             aria-label="Mark set ${i + 1} complete">
                         <span class="box" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none">
                                 <path d="M5 12.5 L10 17.5 L19 6.5" stroke="currentColor"
-                                      stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                      stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </span>
                     </button>

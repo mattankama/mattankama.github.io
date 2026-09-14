@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="color-scheme" content="dark">
-    <meta name="theme-color" content="#191D24">
-    <meta name="description" content="Rattlesnake — minimal weightlifting workout tracker">
+    <meta name="theme-color" content="#0F0E0D">
+    <meta name="description" content="Rattlesnake — weightlifting workout tracker">
 
     <title>{% block title %}Rattlesnake{% endblock %}</title>
 
@@ -18,13 +18,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rattlesnake">
 
+    <!-- One variable family, two axes (weight 100-900, width 62-125%).
+         Width carries hierarchy, so there is nothing else to load. -->
     <link rel="preload" as="font" type="font/woff2" crossorigin
-          href="{{ url_for('static', filename='fonts/plus-jakarta-sans-latin-var.woff2') }}">
-    <link rel="preload" as="font" type="font/woff2" crossorigin
-          href="{{ url_for('static', filename='fonts/outfit-latin-var.woff2') }}">
+          href="{{ url_for('static', filename='fonts/archivo-latin-var.woff2') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <!-- Ambient heat: one soft field behind everything, so the canvas reads as
+         a lit space rather than a flat black sheet. -->
+    <div class="aura" aria-hidden="true"></div>
+
     {% block content %}{% endblock %}
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

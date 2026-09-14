@@ -1,189 +1,209 @@
 # Design Guidelines
-### Weightlifting Workout App
-*Implementation Reference*
+### Rattlesnake — Weightlifting Workout App
+*Implementation Reference — design system "**FORGE**"*
 
 > **Purpose**
-> A standalone visual reference for implementing the workout app described in CONTEXT.md. Use it for screen layout, component styling, and any future design or development work on the app. The interface is dark-mode-only and minimal: bold, meaningful text carries the hierarchy, the palette below is the only palette, and decorative effects are used sparingly — functional depth cues (micro-shadows on sticky elements, elevated input backgrounds) are permitted where they aid layer separation on a dark canvas.
+> The single visual reference for this app. It describes the system that is actually implemented in `app/static/css/style.css`; if the code and this document disagree, one of them is a bug. The interface is dark-mode-only, mobile-first, and built to be used one-handed, mid-set, with sweaty hands, in bad gym light.
 
 ## System at a glance
 
 | | |
 |---|---|
-| **Visual character** | Minimal, direct, unadorned. Nothing on screen that isn't load-bearing. |
-| **Core approach** | Weight and size create hierarchy, not color or effects. Bold text marks what the user needs to read or act on; everything else recedes. |
-| **Palette** | Six fixed tokens (dark-mode-only), defined in Section 2. One accent, used sparingly. |
-| **Density** | Compact and thumb-friendly — built to be read and adjusted mid-set, often one-handed. |
-| **Surfaces** | Neumorphic (soft-embossed). We use subtle light and dark shadows to create depth, making elements appear extruded from or inset into the background surface, while maintaining minimalism. No blur or gradients. |
-| **Motion** | Minimal; only where it explains a real state change (the timer, a logged set). |
+| **Name** | FORGE — mass, material, heat. |
+| **Visual character** | Warm graphite surfaces, huge extended numerals, one incandescent accent. Confident and physical rather than clinical. |
+| **Core approach** | Hierarchy is carried by the *shape of the letters* — width and weight rise together with importance. Grouping is carried by *surfaces*, never by hairline dividers. |
+| **Palette** | A warm four-step elevation ramp on a near-black (never `#000`) canvas, three inks, one accent, one destructive. |
+| **Typeface** | One variable family, Archivo, with two axes: weight 100–900 and **width 62–125%**. Nothing else loads. |
+| **Density** | Generous targets, tight type. Every control ≥44×44; the primary ones are 48. |
+| **Surfaces** | Opaque, stacked, with concentric corner radii. Chrome floats above content on glass. |
+| **Motion** | Spring physics with a visible overshoot, on state changes only. Shapes morph under the thumb. |
 
 ## 1. Core visual principles
 
-**Minimal first.** The interface should feel empty before it feels full. If an element doesn't help the user log a set or manage the timer, it doesn't belong on screen.
+**Width is the hierarchy axis.** This is the system's one real idea. Archivo is a variable font with a `wdth` axis, so importance is expressed by letterforms getting wider and heavier together: display type at 116% width, titles at 106%, everything else at 100%. It means the timer and the big numbers are unmistakably the most important things on screen without needing a box, a rule, or a colour to say so.
 
-**Bold means meaningful.** Bold weight is reserved for what the user is reading or editing right now: the exercise name, the current weight, the rep count, the timer. Labels, units, and metadata stay at a lighter weight so bold text is never competing with itself.
+**Nothing whispers.** There is no 11px uppercase letterspaced grey micro-label anywhere in this system, and there must never be one. That pattern is both dated and, in a gym, unreadable. Labels are sentence case, 13px minimum, ≥600 weight, and every single one clears WCAG AA against the surface it actually sits on. Where the old system tracked labels *out*, this one tracks display type *in* (−0.035em) and lets weight do the work — the same move Material 3 Expressive makes with its "emphasized" styles.
 
-**Hierarchy without decoration.** Gradients and glassmorphism are not part of this system. Size, weight, spacing, and the single accent color do the main work of hierarchy. We use neumorphic effects (soft-embossed highlights and shadows) to create tactile depth—buttons extrude from the surface, inputs press into it—while remaining fundamentally minimal.
+**Grouping is a surface, not a line.** An exercise is a card. A routine is a card. A set is a row-surface inside a card. Hairlines in this system are the lit top edge of a material (`inset 0 1px 0`), never a divider between two pieces of content. On a dark canvas, elevation is communicated by *lighter surfaces* — shadows are close to invisible, so they are not asked to carry structure.
 
-**Neumorphic by default.** We embrace soft UI depth. Instead of flat cards, interactive elements like buttons and containers extrude smoothly from the surface, while inputs and active states appear pressed (inset).
+**Concentric radii.** Nested corners follow `inner = outer − padding`. A card at radius 26 with 10px padding contains controls at radius 16. Mismatched nested corners are the clearest tell of unconsidered work; getting this right is nearly free.
 
-**Built for the gym, not the pitch deck.** Sweaty hands, bad lighting, and glancing mid-set are the real usage conditions. Every choice should hold up there, not just in a mockup.
+**Content is opaque; only chrome is glass.** Exactly two glass surfaces exist — the floating rest timer and the pinned bottom action bar — and they are the navigation layer, not the content layer. Glass never stacks on glass, and it never sits under a number you have to read. Anyone who has asked their OS to reduce transparency gets the identical layout on a flat opaque surface.
+
+**Built for the gym, not the pitch deck.** Sweaty hands, bad lighting, glancing mid-set. Every choice has to hold up there.
 
 ### Brand character
 
 | Trait | Visual expression |
 |---|---|
-| **Direct** | States the number, not a description of it — "185 × 8," not "you lifted 185 lbs for 8 reps." |
-| **Honest** | No motivational copy, streaks, or gamified language standing in for real progress. |
-| **Fast** | Every control reachable in one tap; nothing nested behind menus during a workout. |
-| **Legible** | Readable at arm's length, in a gym, without your glasses. |
-| **Quiet** | The app should be fully usable with the sound and the color both off. |
+| **Direct** | States the lift the way a lifter writes it — `185 lb × 8 reps` — not a sentence describing it. |
+| **Honest** | No streaks, badges, confetti, or motivational copy. A finished set turns warm; that is the entire celebration. |
+| **Fast** | Every control reachable in one tap. Nothing a workout needs is behind a menu. |
+| **Legible** | Readable at arm's length, from a phone propped against a rack. |
+| **Quiet** | Fully usable with the sound off and colour ignored — state is always legible from shape and fill as well as hue. |
 
-## 2. Color system
+## 2. Colour system
 
-**Rule:** the app is dark-mode-only. Every screen is built from the six tokens below. Copper is the only accent, and it appears once per screen at most. There is no light mode.
+**Rule:** dark-mode only. The canvas is a *warm near-black*, deliberately not `#000` — pure black cannot support an elevation ladder, and it vibrates against high-contrast text.
 
 ### Palette
 
 | Token | Value | Use |
 |---|---|---|
-| **Surface** | `#191D24` | Background canvas (near-black). |
-| **Ink** | `#E8E7E4` | Primary text (soft white). Every exercise name, weight, and rep count is set in Ink. |
-| **Structure** | `#799496` | Secondary text, dividers, borders. |
-| **Muted** | `#4A5568` | Inactive controls, placeholder text, quiet metadata — darker than Structure, recedes on a dark background. |
-| **Elevated** | `#232830` | Subtle surface lift for sticky bars, input fields, and grouped panels. Never used as text. |
-| **Accent** | `#B87D4B` | The one deliberate highlight: a running timer, the Complete Workout button, a selected machine. |
+| `--canvas` | `#0F0E0D` | The page. Warm near-black. |
+| `--surface-1` | `#1C1A18` | Cards: a routine, an exercise, the empty state. |
+| `--surface-2` | `#272320` | Controls nested in a card: inputs, select triggers, set rows. |
+| `--surface-3` | `#332E2A` | Pressed, hovered, focused, and open menu surfaces. |
+| `--surface-done` | `#3D2C22` | A completed set row. **Opaque by requirement** — see below. |
+| `--ink` | `#F7F4F1` | Names and numbers. Warm off-white, never `#FFF`. |
+| `--ink-2` | `#C4BEB8` | Supporting copy. |
+| `--ink-3` | `#A39C95` | Units, meta, placeholders. The floor — nothing quieter than this exists. |
+| `--ember` | `#FF7A2F` | The one accent. |
+| `--ember-ink` | `#14100E` | Text on an ember fill. |
+| `--danger` | `#FF6183` | Destructive only. |
+| `--edge` | `rgba(255,255,255,0.085)` | Material edge. |
+| `--edge-strong` | `rgba(255,255,255,0.18)` | Outlined controls. |
+| `--glass` | `rgba(24,21,20,0.86)` | Floating chrome. |
 
-> **Color rules**
-> - Accent (Copper) appears at most once per screen — reserve it for the single most important action or state.
-> - Never blend, gradient, or tint between two palette colors; use each color flat and at full value.
-> - Structure and Muted are both quiet tones — use Structure where stronger separation is needed (dividers, secondary text) and Muted where content should recede further (placeholders, disabled controls, inactive metadata).
-> - State (timer running, set completed, machine selected) should be legible from weight and position alone — color reinforces it, it doesn't carry it alone.
-> - Elevated provides subtle layer separation on the dark canvas — use it for sticky elements and input backgrounds, never for text.
+> **Colour rules**
+> - **Ember means "live or done", and nothing else.** A running rest timer, a completed set, and the action that starts work. It is never decoration.
+> - **Destructive is pink-leaning on purpose.** `#FF6183` against `#FF7A2F` can never be confused at a glance, which a conventional red could be.
+> - **Never put an alpha tint on a surface that has something behind it.** A completed set row sits directly above the swipe-to-delete panel; giving it `rgba(ember, 0.1)` lets the delete colour read straight through the row. That is why `--surface-done` is a pre-blended opaque value. This bug is invisible to the static screenshot audit, because the audit never renders a completed set.
+> - **Contrast is measured against the real composited background**, not against the canvas. Every pair in this system clears AA at its own size, including on `--surface-done` and on glass.
+> - State is never carried by hue alone: a completed set changes its surface, its ring, *and* the shape of its toggle.
 
 ## 3. Typography
 
-**Font.** The app uses custom web fonts to establish a modern, minimal aesthetic. `Inter` is used for body text and UI controls to ensure maximal legibility at small sizes. `Space Grotesk` is used for all numbers (timers, weight, reps) and primary headings (h1, screen titles, exercise names) to provide a distinct, tech-forward character.
+**One family: `Archivo`**, self-hosted as a single `.woff2` (90 KB, latin subset) at `app/static/fonts/archivo-latin-var.woff2`, preloaded in `base.html`. There is no network at runtime, so Google Fonts `<link>` tags do not work — a new face means downloading the `.woff2`, updating `@font-face`, and updating the preload tag.
 
-**Two weights only.** Bold and Regular. No light, thin, semi-bold, or italic — a third weight adds a hierarchy level this app doesn't need.
+Archivo was chosen for three reasons: it carries a genuine `wdth` axis (62–125%) so the whole hierarchy comes from one file; it has true tabular figures; and it is a well-drawn grotesque that is not `Inter`, `Geist`, or `Space Grotesk` — all three of which now read as a default rather than a decision.
+
+### Width scale
+
+| Token | Value | Use |
+|---|---|---|
+| `--w-display` | `116%` | Hero title, rest timer, weight and rep numerals. |
+| `--w-title` | `106%` | Exercise and routine names. |
+| `--w-ui` | `100%` | Everything else. |
 
 ### Type scale
 
-| Role | Range | Use |
-|---|---|---|
-| **Timer** | 48–64 pt, Bold | The rest-timer readout. Always the largest text on screen when a workout is active. |
-| **Weight × Reps** | 28–34 pt, Bold | The current set's numbers — the thing the user is here to see and change. |
-| **Exercise name** | 18–20 pt, Bold | Identifies the current exercise at a glance. |
-| **Button / action label** | 15–17 pt, Bold | Complete Workout, Add Machine, Add Set — anything the user taps. |
-| **Body / metadata** | 13–15 pt, Regular | Machine name, set count, timestamps — present but quiet. |
+| Role | Token | Size | Weight | Use |
+|---|---|---|---|---|
+| Hero | `--t-hero` | 44 → 60 | 800 | The app title on home. |
+| Timer | `--t-timer` | 40 → 52 | 700 | The rest-timer readout. |
+| Page title | `--t-h1` | 28 → 34 | 750–800 | Screen titles, routine names. |
+| Exercise name | `--t-h2` | 22 | 750 | Identifies the lift. |
+| Numbers | `--t-num` | 30 | 700 | Weight and reps. Tabular. |
+| Body / button | `--t-body` | 16 | 450–700 | Also the floor that stops iOS focus-zoom. |
+| Small | `--t-sm` | 15 | 550–650 | Secondary copy, small buttons. |
+| Meta | `--t-xs` | 13 | 600 | Units, chips, field labels. **The smallest size in the system.** |
 
 ### Typographic discipline
 
-- Use tabular (fixed-width) numerals wherever numbers change — the timer and the weight/rep counters especially — so digits don't shift the layout as they update.
-- Never use color alone to distinguish bold, meaningful text from regular text; weight always carries that distinction.
-- Keep labels short enough that they never wrap at the smallest supported screen width.
-- No all-caps body text; reserve capitals for short labels only, not sentences.
+- **Every changing number gets `font-variant-numeric: tabular-nums`** plus `font-feature-settings: "tnum" 1` — the timer, weights and reps. Without it, digits shimmy as values increment.
+- **Tighten display type, never loosen it.** `−0.035em` at display sizes, `−0.02em` at title sizes.
+- **No uppercase transforms and no positive letter-spacing anywhere.**
+- Long user-supplied strings (routine and exercise names) always get `overflow-wrap: anywhere` and a full-width line. They wrap; they are never truncated to an ellipsis.
 
 ## 4. Spacing, density & geometry
 
-| | |
-|---|---|
-| **Base rhythm** | 8-point spacing grid, with 4-point exceptions for micro-spacing between a number and its unit. |
-| **Touch targets** | 44 × 44 pt minimum on every tappable control — set +/−, weight/rep steppers, machine switcher. Gym use means sweaty, imprecise taps. |
-| **Sticky elements** | The timer bar and Complete Workout button get generous internal padding (16–20 pt) so they stay easy to hit without looking. |
-| **List rows** | Compact — exercises and sets should be scannable in a single glance down the screen, not spaced out like marketing content. |
+4px base scale, `--s1` … `--s12`. Page gutter `--gutter` is 16px on phones, 24px from 620px up. The content column is capped at `--shell` (560px) and centred.
 
 ### Shape & radius
 
-- One radius value, used everywhere a corner is rounded. Do not vary radius by component.
-- Keep it modest — enough to soften a rectangle, not enough to read as a pill. This is not a "rounded card" app.
-- Full pills are reserved for small, genuinely token-like elements (a machine tag), never for buttons or containers.
-- No large sweeping radii applied for the sake of looking "modern" — that reads as decoration, which this system avoids.
+| Token | Value | Use |
+|---|---|---|
+| `--r-card` | `26px` | Cards. |
+| `--r-control` | `16px` | Controls nested in a card (26 − 10 padding). |
+| `--r-chip` | `10px` | Chips, menu items, the completion box. |
+| `--r-pill` | `999px` | Buttons and count chips. |
+
+**Targets.** `--tap` is 48px and applies to every primary control. Nothing interactive is ever below 44×44 — including the set-weight and set-rep inputs, which carry the target themselves because the number *is* the control.
 
 ## 5. Surfaces & layout anatomy
 
-- The UI is neumorphic. Elements share the background color of their container and use combinations of light and dark shadows to create depth. No blur, no translucency, no gradients.
-- Sticky elements and buttons appear extruded using outer shadows (e.g., `-5px -5px 10px rgba(255,255,255,0.05), 5px 5px 10px rgba(0,0,0,0.5)`).
-- Input fields and selects appear pressed into the surface using inset shadows (e.g., `inset -3px -3px 6px rgba(255,255,255,0.05), inset 3px 3px 6px rgba(0,0,0,0.5)`).
-- Lists are the primary layout, not cards. An exercise and its sets form an ordered list separated by hairlines or soft neumorphic dividers.
-- Exercise entry blocks use a left accent border (`3px solid Structure`) with padding-left for visual rhythm as you scroll.
-- Routine panels on the home screen use a neumorphic extruded background with border-radius for subtle grouping.
+**Home.** A hero title, then routines as full-width cards. Each card stacks: name on its own full-width line → a count chip → an action row with an ember `Start` filling the width and a bordered `Edit` beside it. The name having its own line is structural, not stylistic — it is what makes the layout immune to the flex-crush bug that previously squeezed routine names into a 28px box. Any flex child holding text carries `min-width: 0`.
+
+**Session.** The rest timer is a glass capsule floating over the scrolling content, not a bar occupying space above it. Each exercise is a card containing its name, its machine selector, its set rows, and a full-width ghost `+ Add Set`. The bottom bar is glass with a solid ember `Complete Session`.
+
+**The set row** is the most important component in the app. It is a sliding surface over a parked delete panel:
+
+```
+[ 1 ]   185 lb  ×  8 reps            ( ✓ )
+```
+
+- The index is a 24px chip; the numbers are 30px extended tabular inputs; units sit on the number's baseline.
+- There is **no column header**. Units travel with their own number, so nothing can drift out of sync with the rows beneath it.
+- The completion target is 48×48 — the largest thing you can hit in the row.
+- Completed: the surface becomes `--surface-done`, gains an ember ring, the index brightens to `--ink`, and the toggle fills ember while its corner radius morphs from a rounded square to a circle. **The numbers stay at full contrast** — a finished set is still information you need.
+- The delete panel is inset 3px from the row. Sitting flush, its colour bleeds through the surface's antialiased corner arc as a one-pixel pink seam.
+
+**Routine editor.** Each exercise is a card; its machines sit in a darker well pressed into that card, so nesting is visible rather than implied. The destructive zone is isolated at the bottom behind an in-page confirm — never a native `confirm()`.
 
 ### Component notes
 
-| Component | Guidance |
-|---|---|
-| **Rest timer bar** | Pinned to the top of the screen at all times during a workout. Large, bold, tabular numerals in Ink; switches to Accent only while running. A divider line, not a shadow, separates it from the list below. |
-| **Exercise row** | Bold exercise name and current weight × reps in Ink. Machine name and set count sit below in Muted, Regular weight — clearly secondary. |
-| **Set stepper (+/− sets, weight, reps)** | Plain bold numerals with neumorphic +/− controls on either side. The controls extrude from the surface and inset when pressed. |
-| **Machine switcher** | A simple inline selector, not a styled dropdown. Selecting or adding a machine swaps in that machine's own saved stats immediately, with no transition beyond the numbers changing. |
-| **Complete Workout button** | Pinned to the bottom of the screen. Solid Accent fill, bold label, full width. Uses neumorphic shadows for a tactile appearance. |
+- **Buttons.** `--primary`/`--accent` = ember fill (go). `--secondary` = raised surface. `--muted` = outline. `--danger` = tinted with a pink ring. `.btn-text` is a bordered 44px pill, not bare text.
+- **Custom select** replaces the native `<select>`; the chevron is drawn from borders, so there is no icon font and no request.
+- **Inline errors** are tinted panels with a ring, prepended to the relevant container — never a `console.error` alone.
 
 ## 6. Iconography
 
-- Prefer text over icons. A label the user can read beats an icon they have to interpret, especially glancing mid-set.
-- If an icon is used (add/remove set, timer controls), keep it single-weight, line-based, and sized to match the surrounding text — no filled, multicolor, or novelty icon styles.
-- Never rely on an icon alone for a destructive or important action (removing a set, deleting a machine) without a text label nearby.
+Near-zero. The only marks are a drawn chevron on the select and a stroked check in the completion box. No icon font, no SVG sprite, no network request. Anything new should be drawable in CSS or a handful of path commands.
 
 ## 7. Motion
 
-- Motion is the exception, not the default. Most state changes — switching a machine, editing a stat — should update instantly with no transition.
-- Where motion is used — the timer ticking down, a set marked complete — keep it fast (under ~150 ms) and purely functional. It should explain a change, not perform one.
-- No bounce, spring, confetti, or celebratory animation on completing a set or a workout. The reward is the workout being logged, not an effect.
+- `--dur` 180ms, `--dur-fast` 110ms.
+- `--ease-spring` is a `linear()` spring with a visible overshoot, used for state changes that should feel physical.
+- **Shapes morph under the thumb**: `.btn:active` drops from a pill to an 18px radius and scales to 0.97; the completion box squashes to 0.88 and rounds fully. This is the one genuinely contemporary micro-interaction in the system, and it is nearly absent from the web.
+- Motion never explains something the layout already said. `prefers-reduced-motion` disables all of it.
 
 ## 8. Anti-patterns
 
-> **No exceptions**
-> These patterns are excluded regardless of platform, screen, or future feature. If a new screen seems to need one of them, the screen's hierarchy needs rework — not an effect.
-
-- Gradients of any kind, on any surface or text.
-- Glassmorphism, frosted blur, or translucent panels.
-- Oversized corner radii or an "everything is a pill" button style.
-- More than one accent color active on a single screen.
-- Decorative icons, multicolor icon packs, or icons used to fill empty space.
-- Confetti, "level up" language, streak badges, or other gamified celebration.
-- Skeleton-loading animations or spinners for changes that update instantly on-device.
-- Any color outside the six tokens defined in Section 2.
-- Light mode or dual-mode theming — the app is dark-mode-only.
+- ❌ Uppercase, letterspaced, small, grey labels. The single most dated pattern available.
+- ❌ Hairline dividers doing the work of grouping.
+- ❌ Pure `#000`, or any pure `#FFF` text.
+- ❌ An alpha tint on any surface that has another element behind it.
+- ❌ Truncating a user's routine or exercise name.
+- ❌ Glass on a content surface, or glass stacked on glass.
+- ❌ Two accents. Ember is the only one; danger is not an accent, it is a warning.
+- ❌ Gamification of any kind — streaks, badges, confetti, encouragement copy.
+- ❌ Renaming a CSS class without grepping `app/static/js/*.js` and `app/templates/*.html` first. The JS builds DOM with these exact names.
 
 ## 9. Open decisions
 
-| Decision | Status | Guidance |
-|---|---|---|
-| **Platform / font stack** | Resolved | The app uses `Inter` for standard UI text and `Space Grotesk` for headings and tabular numbers, loaded via Google Fonts. |
-| **Exact corner radius** | Not specified | The rule (one value, modest, used everywhere) is set; the numeric value is left to implementation. |
+- **Light mode** is not implemented. The token layer is structured so it would be a `:root` override rather than a rewrite, but the product is dark-only today.
+- **Units are pounds**, hard-coded in the row label and the input's accessible name. Kilograms would need both.
+- **`oklch()`** is the better authoring space for this palette (P3 headroom, predictable lightness) and is worth migrating to once the contrast tooling parses it; the values above are the sRGB equivalents.
 
 ## 10. Implementation token sheet
 
-*These names are reference-friendly aliases for the palette values; they do not change the source colors.*
+Authoritative source: `:root` in `app/static/css/style.css`.
 
-| Reference token | Value | Meaning |
-|---|---|---|
-| `--color-surface` | `#191D24` | Background canvas (near-black) |
-| `--color-ink` | `#E8E7E4` | Primary text (soft white) |
-| `--color-structure` | `#799496` | Secondary text, dividers, borders |
-| `--color-muted` | `#4A5568` | Inactive / placeholder / quiet metadata |
-| `--color-elevated` | `#232830` | Sticky bars, input backgrounds, grouped panels |
-| `--color-accent` | `#B87D4B` | Single highlight: active timer, primary action, selected state |
-| `--space-unit` | 8 pt | Primary spacing rhythm |
-| `--space-micro` | 4 pt | Micro-spacing exception |
-| `--touch-target-min` | 44 pt | Minimum tappable area |
-| `--motion-duration` | <150 ms | Functional motion only |
+```css
+--canvas:#0F0E0D; --surface-1:#1C1A18; --surface-2:#272320;
+--surface-3:#332E2A; --surface-done:#3D2C22;
+--ink:#F7F4F1; --ink-2:#C4BEB8; --ink-3:#A39C95;
+--ember:#FF7A2F; --ember-ink:#14100E; --danger:#FF6183;
+--edge:rgba(255,255,255,.085); --edge-strong:rgba(255,255,255,.18);
+--glass:rgba(24,21,20,.86);
+--font:"Archivo"; --w-display:116%; --w-title:106%; --w-ui:100%;
+--r-card:26px; --r-control:16px; --r-chip:10px; --r-pill:999px;
+--tap:48px; --shell:560px; --gutter:16px;
+```
 
 ### Implementation checklist
 
-- [ ] Is every bold element something the user needs to read or act on right now?
-- [ ] Does Accent appear at most once on this screen?
-- [ ] Could this screen be understood in grayscale?
-- [ ] Are sticky elements using Elevated background + micro-shadow for layer separation?
-- [ ] Is there a gradient, blur, or decorative shadow anywhere? (If yes, remove it.)
-- [ ] Are all touch targets at least 44 × 44 pt?
-- [ ] Does every icon have a text label nearby?
-- [ ] Is spacing built from the 8pt grid (4pt only for micro-spacing)?
-- [ ] Are all native `<select>` elements replaced with custom dropdowns matching the design system?
+- [ ] Every screen works at 390px with no horizontal scrolling.
+- [ ] Every interactive element is ≥44×44.
+- [ ] Every text/background pair clears AA **against its real composited background** — including completed set rows and glass.
+- [ ] No uppercase or letterspaced labels; nothing below 13px.
+- [ ] Nested radii follow `inner = outer − padding`.
+- [ ] Changing numbers use tabular figures.
+- [ ] No surface with alpha sits above another element.
+- [ ] `prefers-reduced-motion` and `prefers-reduced-transparency` both degrade cleanly.
+- [ ] Tests pass and coverage stays ≥90%.
 
 ### Source scope
 
-Built from the app's CONTEXT.md (workout creation, active-workout, and completion flows) and the dark-mode-only palette. The exact radius remains open per Section 9, while the font stack has been resolved to use Inter and Space Grotesk.
-
----
-*Companion to CONTEXT.md · September 2026*
+`app/static/css/style.css` is the only stylesheet. `app/templates/*.html` carry structure; `app/static/js/*.js` build DOM using the class names above and must be updated in lockstep with any rename.

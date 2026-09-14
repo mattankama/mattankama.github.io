@@ -2,9 +2,13 @@
 {% block title %}Session — Rattlesnake{% endblock %}
 
 {% block content %}
-<!-- Sticky rest timer (top anchor, §5) -->
+<!-- The rest timer floats over the content on glass rather than sitting in a
+     bar above it, so the sets you are reading never lose vertical space. -->
 <div class="timer-bar" id="timer-bar">
-    <span class="timer-display" id="timer-display" role="timer" aria-live="off">00:00</span>
+    <div class="timer-shell">
+        <span class="timer-label">Rest</span>
+        <span class="timer-display" id="timer-display" role="timer" aria-live="off">00:00</span>
+    </div>
 </div>
 
 <!-- Scrollable exercise list -->
@@ -20,8 +24,7 @@
     <p class="sets-hint">Swipe a set left to delete it.</p>
 </div>
 
-<!-- Complete Session: pinned to the bottom, full width (§5). No accent —
-     Copper is reserved for the running rest timer. -->
+<!-- Complete Session: pinned to the bottom on the same glass as the timer. -->
 <div class="complete-bar">
     <button class="btn btn-primary" id="complete-session-btn">Complete Session</button>
 </div>
