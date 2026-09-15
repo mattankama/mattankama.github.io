@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Rattlesnake{% endblock %}
+
+{% block content %}
+<!-- Home and Progress are two panes of ONE document, not two pages. Nothing
+     navigates between them, which is the whole point: both panes are already in
+     the DOM, so the track can follow the finger and snap on release with no load
+     to wait for and no flash to cover. Sliding left reaches Progress; that
+     gesture is the only way in. -->
+<div class="pager" id="pager">
+    <div class="pager-track" id="pager-track">
+        <section class="pane" id="pane-home" aria-label="Routines">
+            {% include "_pane_home.html" %}
+        </section>
+        <section class="pane" id="pane-progress" aria-label="Progress">
+            {% include "_pane_progress.html" %}
+        </section>
+    </div>
+</div>
+
+<script>window.START_PANE = {{ start_pane }};</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/progress.js') }}"></script>
+{% endblock %}

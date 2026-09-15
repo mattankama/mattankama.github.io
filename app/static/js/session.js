@@ -1,6 +1,6 @@
 /**
  * Rattlesnake — Active session logic
- * Timer, exercise entries, machine selection, set management, completion.
+ * Timer, exercise entries, instance selection, set management, completion.
  */
 
 // Timer state
@@ -11,7 +11,7 @@ const timer = {
 };
 
 // Track custom dropdown instances by entry ID
-const machineDropdowns = {};
+const instanceDropdowns = {};
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -89,32 +89,32 @@ function renderEntries(entries) {
         block.id = `entry-${entry.id}`;
 
         const exerciseName = entry.exercise ? entry.exercise.name : "Unknown";
-        const machines = entry.exercise ? entry.exercise.machines || [] : [];
+        const instances = entry.exercise ? entry.exercise.instances || [] : [];
         const exerciseId = entry.exercise ? entry.exercise.id : null;
 
-        const dropdownOptions = machines.map((m) => ({
+        const dropdownOptions = instances.map((m) => ({
             value: String(m.id),
             label: m.name,
         }));
         dropdownOptions.push({
             value: "__new__",
-            label: "+ Add new machine",
+            label: "+ Add new instance",
             isAction: true,
         });
 
-        const selectedMachineId = entry.machine ? String(entry.machine.id) : "";
+        const selectedInstanceId = entry.instance ? String(entry.instance.id) : "";
 
         block.innerHTML = `
             <div class="entry-header">
                 <div class="exercise-title">${escapeHTML(exerciseName)}</div>
-                <div class="machine-selector">
-                    <div id="machine-dropdown-${entry.id}"></div>
+                <div class="instance-selector">
+                    <div id="instance-dropdown-${entry.id}"></div>
                 </div>
-                <div class="new-machine-inline" id="new-machine-inline-${entry.id}" style="display:none;">
-                    <div class="machine-selector">
-                        <input type="text" id="new-machine-input-${entry.id}" placeholder="Machine name" aria-label="New machine name">
-                        <button class="btn btn-secondary btn-small" data-act="add-machine">Add</button>
-                        <button class="btn btn-muted btn-small" data-act="cancel-machine">Cancel</button>
+                <div class="new-instance-inline" id="new-instance-inline-${entry.id}" style="display:none;">
+                    <div class="instance-selector">
+                        <input type="text" id="new-instance-input-${entry.id}" placeholder="Instance name" aria-label="New instance name">
+                        <button class="btn btn-secondary btn-small" data-act="add-instance">Add</button>
+                        <button class="btn btn-muted btn-small" data-act="cancel-instance">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -128,23 +128,23 @@ function renderEntries(entries) {
 
         container.appendChild(block);
 
-        block.querySelector('[data-act="add-machine"]')
-            .addEventListener("click", () => submitNewMachine(entry.id, exerciseId));
-        block.querySelector('[data-act="cancel-machine"]')
-            .addEventListener("click", () => cancelNewMachine(entry.id));
+        block.querySelector('[data-act="add-instance"]')
+            .addEventListener("click", () => submitNewInstance(entry.id, exerciseId));
+        block.querySelector('[data-act="cancel-instance"]')
+            .addEventListener("click", () => cancelNewInstance(entry.id));
         block.querySelector('[data-act="add-set"]')
             .addEventListener("click", () => addSet(entry.id));
 
         bindSetHandlers(entry.id);
 
-        machineDropdowns[entry.id] = new CustomSelect(
-            document.getElementById(`machine-dropdown-${entry.id}`),
+        instanceDropdowns[entry.id] = new CustomSelect(
+            document.getElementById(`instance-dropdown-${entry.id}`),
             {
-                placeholder: "Select machine",
+                placeholder: "Select instance",
                 options: dropdownOptions,
-                selectedValue: selectedMachineId,
-                id: `machine-select-${entry.id}`,
-                onChange: (value) => onMachineChange(entry.id, value, exerciseId),
+                selectedValue: selectedInstanceId,
+                id: `instance-select-${entry.id}`,
+                onChange: (value) => onInstanceChange(entry.id, value, exerciseId),
             }
         );
     }
@@ -161,7 +161,7 @@ function renderEntries(entries) {
  */
 function renderSetsHTML(sets) {
     if (!sets || sets.length === 0) {
-        return '<div class="sets-empty">Select a machine to load sets</div>';
+        return '<div class="sets-empty">Select an instance to load sets</div>';
     }
 
     let html = "";
@@ -328,26 +328,26 @@ async function refreshEntrySets(entryId) {
 }
 
 // ---------------------------------------------------------------------------
-// Machine selection
+// Instance selection
 // ---------------------------------------------------------------------------
 
-async function onMachineChange(entryId, value, exerciseId) {
+async function onInstanceChange(entryId, value, exerciseId) {
     if (value === "__new__") {
-        const inlineEl = document.getElementById(`new-machine-inline-${entryId}`);
+        const inlineEl = document.getElementById(`new-instance-inline-${entryId}`);
         inlineEl.style.display = "block";
-        const input = document.getElementById(`new-machine-input-${entryId}`);
+        const input = document.getElementById(`new-instance-input-${entryId}`);
         input.value = "";
         input.focus();
 
-        const dropdown = machineDropdowns[entryId];
+        const dropdown = instanceDropdowns[entryId];
         if (dropdown) dropdown.setValue("");
     } else if (value) {
         await prefillSets(entryId, parseInt(value, 10));
     }
 }
 
-async function submitNewMachine(entryId, exerciseId) {
-    const input = document.getElementById(`new-machine-input-${entryId}`);
+async function submitNewInstance(entryId, exerciseId) {
+    const input = document.getElementById(`new-instance-input-${entryId}`);
     const name = input.value.trim();
     if (!name) {
         input.focus();
@@ -355,38 +355,38 @@ async function submitNewMachine(entryId, exerciseId) {
     }
 
     try {
-        const machine = await fetchJSON(`/api/exercises/${exerciseId}/machines`, {
+        const instance = await fetchJSON(`/api/exercises/${exerciseId}/instances`, {
             method: "POST",
             body: JSON.stringify({ name }),
         });
 
-        const dropdown = machineDropdowns[entryId];
+        const dropdown = instanceDropdowns[entryId];
         if (dropdown) {
-            dropdown.addOption(String(machine.id), machine.name);
-            dropdown.select(String(machine.id));
+            dropdown.addOption(String(instance.id), instance.name);
+            dropdown.select(String(instance.id));
         }
 
-        document.getElementById(`new-machine-inline-${entryId}`).style.display = "none";
-        await prefillSets(entryId, machine.id);
+        document.getElementById(`new-instance-inline-${entryId}`).style.display = "none";
+        await prefillSets(entryId, instance.id);
     } catch (err) {
         showError(
             document.getElementById(`entry-${entryId}`),
-            `Could not add that machine: ${err.message}`
+            `Could not add that instance: ${err.message}`
         );
     }
 }
 
-function cancelNewMachine(entryId) {
-    document.getElementById(`new-machine-inline-${entryId}`).style.display = "none";
-    const dropdown = machineDropdowns[entryId];
+function cancelNewInstance(entryId) {
+    document.getElementById(`new-instance-inline-${entryId}`).style.display = "none";
+    const dropdown = instanceDropdowns[entryId];
     if (dropdown) dropdown.setValue("");
 }
 
-async function prefillSets(entryId, machineId) {
+async function prefillSets(entryId, instanceId) {
     try {
         const entry = await fetchJSON(`/api/session-entries/${entryId}/prefill`, {
             method: "POST",
-            body: JSON.stringify({ machine_id: machineId }),
+            body: JSON.stringify({ instance_id: instanceId }),
         });
 
         document.getElementById(`sets-${entryId}`).innerHTML = renderSetsHTML(entry.sets);
@@ -422,24 +422,41 @@ async function updateSet(setId, field, value) {
     }
 }
 
+/** Paint one set's completion state. */
+function paintSetCompletion(setId, completed) {
+    const row = document.getElementById(`set-row-${setId}`);
+    if (!row) return;
+    row.classList.toggle("completed", completed);
+    const toggle = row.querySelector('[data-act="toggle"]');
+    if (toggle) toggle.setAttribute("aria-checked", String(completed));
+}
+
+/**
+ * Mark a set done.
+ *
+ * The box fills first and the request follows. Waiting on the round trip before
+ * painting made the tap feel dropped, and it also produced a visible flash: on
+ * release the box left its pressed circle and snapped back to the un-checked
+ * rounded square for the length of the request, before finally filling. Painting
+ * first means the shape goes pressed-circle -> filled-circle, one movement.
+ *
+ * The rest timer starts on the same beat, for the same reason — rest begins when
+ * the set ends, not when the server says so.
+ */
 async function toggleSetComplete(setId, completed, entryId) {
+    paintSetCompletion(setId, completed);
+    if (completed) {
+        resetAndStartTimer();
+    }
+
     try {
         await fetchJSON(`/api/session-sets/${setId}`, {
             method: "PUT",
             body: JSON.stringify({ completed }),
         });
-
-        const row = document.getElementById(`set-row-${setId}`);
-        if (row) {
-            row.classList.toggle("completed", completed);
-            const toggle = row.querySelector('[data-act="toggle"]');
-            if (toggle) toggle.setAttribute("aria-checked", String(completed));
-        }
-
-        if (completed) {
-            resetAndStartTimer();
-        }
     } catch (err) {
+        // The write failed, so the row must not keep claiming it succeeded.
+        paintSetCompletion(setId, !completed);
         showError(
             document.getElementById(`entry-${entryId}`),
             `Could not update that set: ${err.message}`

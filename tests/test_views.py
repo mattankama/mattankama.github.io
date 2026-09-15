@@ -13,6 +13,57 @@ class TestViewRoutes:
         resp = client.get("/")
         assert b"create-routine-btn" in resp.data
 
+    def test_home_page_has_no_progress_button(self, client):
+        """Progress is reached by swiping right — deliberately no control."""
+        resp = client.get("/")
+        assert b"progress-link" not in resp.data
+        assert b'href="/progress"' not in resp.data
+
+    def test_home_page_has_no_subtitle(self, client):
+        resp = client.get("/")
+        assert b"Pick a routine and start lifting" not in resp.data
+
+    def test_progress_route_still_reachable_directly(self, client):
+        """No button does not mean no route — the URL still works."""
+        assert client.get("/progress").status_code == 200
+
+    def test_progress_page(self, client):
+        resp = client.get("/progress")
+        assert resp.status_code == 200
+        assert b"Progress" in resp.data
+
+    def test_progress_pane_has_pickers(self, client):
+        resp = client.get("/progress")
+        assert b"exercise-picker" in resp.data
+        assert b"instance-picker" in resp.data
+
+    def test_progress_page_has_no_back_link(self, client):
+        """Progress is a pane, not a page — you slide right to leave it."""
+        resp = client.get("/progress")
+        assert b"back-link" not in resp.data
+
+    def test_both_routes_serve_both_panes(self, client):
+        """One document, two panes: sliding between them never hits the server."""
+        for path in ("/", "/progress"):
+            resp = client.get(path)
+            assert b'id="pane-home"' in resp.data, path
+            assert b'id="pane-progress"' in resp.data, path
+            assert b"pager-track" in resp.data, path
+
+    def test_routes_differ_only_in_starting_pane(self, client):
+        assert b"START_PANE = 0" in client.get("/").data
+        assert b"START_PANE = 1" in client.get("/progress").data
+
+    def test_pager_js_loads(self, client):
+        resp = client.get("/")
+        assert b"pager.js" in resp.data
+
+    def test_js_loads_on_progress(self, client):
+        resp = client.get("/progress")
+        assert b"app.js" in resp.data
+        assert b"progress.js" in resp.data
+        assert b"home.js" in resp.data  # the other pane is live too
+
     def test_new_routine_page(self, client):
         resp = client.get("/routine/new")
         assert resp.status_code == 200

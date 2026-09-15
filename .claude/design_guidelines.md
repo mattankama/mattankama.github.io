@@ -28,7 +28,7 @@
 
 **Concentric radii.** Nested corners follow `inner = outer − padding`. A card at radius 26 with 10px padding contains controls at radius 16. Mismatched nested corners are the clearest tell of unconsidered work; getting this right is nearly free.
 
-**Content is opaque; only chrome is glass.** Exactly two glass surfaces exist — the floating rest timer and the pinned bottom action bar — and they are the navigation layer, not the content layer. Glass never stacks on glass, and it never sits under a number you have to read. Anyone who has asked their OS to reduce transparency gets the identical layout on a flat opaque surface.
+**Content is opaque; only chrome is glass.** Exactly two glass surfaces exist, both on the session screen — the floating rest timer and the pinned `Complete Session` bar — and they are the navigation layer, not the content layer. Home has no glass: its create action is an ordinary pill in the page flow, because nothing there needs to float over scrolling content. Glass never stacks on glass, and it never sits under a number you have to read. Anyone who has asked their OS to reduce transparency gets the identical layout on a flat opaque surface.
 
 **Built for the gym, not the pitch deck.** Sweaty hands, bad lighting, glancing mid-set. Every choice has to hold up there.
 
@@ -67,6 +67,7 @@
 
 > **Colour rules**
 > - **Ember means "live or done", and nothing else.** A running rest timer, a completed set, and the action that starts work. It is never decoration.
+> - **On Progress, ember is the series line.** That screen has no live or done state to claim the accent, and "at most once" includes zero (ADR 0001), so the one ember mark is the line the screen exists to show. The readout above it is `--ink`: it is information, not state. See ADR 0002.
 > - **Destructive is pink-leaning on purpose.** `#FF6183` against `#FF7A2F` can never be confused at a glance, which a conventional red could be.
 > - **Never put an alpha tint on a surface that has something behind it.** A completed set row sits directly above the swipe-to-delete panel; giving it `rgba(ember, 0.1)` lets the delete colour read straight through the row. That is why `--surface-done` is a pre-blended opaque value. This bug is invisible to the static screenshot audit, because the audit never renders a completed set.
 > - **Contrast is measured against the real composited background**, not against the canvas. Every pair in this system clears AA at its own size, including on `--surface-done` and on glass.
@@ -91,7 +92,7 @@ Archivo was chosen for three reasons: it carries a genuine `wdth` axis (62–125
 | Role | Token | Size | Weight | Use |
 |---|---|---|---|---|
 | Hero | `--t-hero` | 44 → 60 | 800 | The app title on home. |
-| Timer | `--t-timer` | 40 → 52 | 700 | The rest-timer readout. |
+| Timer | `--t-timer` | 40 → 52 | 700 | The rest-timer readout, and the Progress top-set value. One big readout per screen. |
 | Page title | `--t-h1` | 28 → 34 | 750–800 | Screen titles, routine names. |
 | Exercise name | `--t-h2` | 22 | 750 | Identifies the lift. |
 | Numbers | `--t-num` | 30 | 700 | Weight and reps. Tabular. |
@@ -123,9 +124,9 @@ Archivo was chosen for three reasons: it carries a genuine `wdth` axis (62–125
 
 ## 5. Surfaces & layout anatomy
 
-**Home.** A hero title, then routines as full-width cards. Each card stacks: name on its own full-width line → a count chip → an action row with an ember `Start` filling the width and a bordered `Edit` beside it. The name having its own line is structural, not stylistic — it is what makes the layout immune to the flex-crush bug that previously squeezed routine names into a 28px box. Any flex child holding text carries `min-width: 0`.
+**Home.** A hero title, then routines as full-width cards. Each card stacks: name on its own full-width line → a count chip → an action row with an ember `Start` filling the width and a bordered `Edit` beside it. The name having its own line is structural, not stylistic — it is what makes the layout immune to the flex-crush bug that previously squeezed routine names into a 28px box. Any flex child holding text carries `min-width: 0`. `Create Routine` is a full-width pill at the foot of the viewport: the container is a flex column at `min-height: 100dvh` and the action takes `margin-top: auto`, so it sits at the bottom when the list is short and simply follows the last card when the list is long. It is not pinned — nothing scrolls underneath it, and it still needs no bar, glass, or divider. Progress has no control at all: it is the pager's second pane, reached by sliding left (§7).
 
-**Session.** The rest timer is a glass capsule floating over the scrolling content, not a bar occupying space above it. Each exercise is a card containing its name, its machine selector, its set rows, and a full-width ghost `+ Add Set`. The bottom bar is glass with a solid ember `Complete Session`.
+**Session.** The rest timer is a glass capsule floating over the scrolling content, not a bar occupying space above it. Each exercise is a card containing its name, its instance selector, its set rows, and a full-width ghost `+ Add Set`. The bottom bar is glass with a solid ember `Complete Session`.
 
 **The set row** is the most important component in the app. It is a sliding surface over a parked delete panel:
 
@@ -139,7 +140,9 @@ Archivo was chosen for three reasons: it carries a genuine `wdth` axis (62–125
 - Completed: the surface becomes `--surface-done`, gains an ember ring, the index brightens to `--ink`, and the toggle fills ember while its corner radius morphs from a rounded square to a circle. **The numbers stay at full contrast** — a finished set is still information you need.
 - The delete panel is inset 3px from the row. Sitting flush, its colour bleeds through the surface's antialiased corner arc as a one-pixel pink seam.
 
-**Routine editor.** Each exercise is a card; its machines sit in a darker well pressed into that card, so nesting is visible rather than implied. The destructive zone is isolated at the bottom behind an in-page confirm — never a native `confirm()`.
+**Routine editor.** Each exercise is a card; its instances sit in a darker well pressed into that card, so nesting is visible rather than implied. The destructive zone is isolated at the bottom behind an in-page confirm — never a native `confirm()`.
+
+**Progress.** Two selectors, then the current top set as a `--t-timer` readout, then the chart on a card, then one row-surface per session carrying the exact numbers. The chart is hand-drawn SVG measured in real pixels and redrawn on resize — never a scaled `viewBox`, which would smear stroke widths and axis type. It is deliberately not tappable: a dense series cannot carry 44×44 targets without lying about them, so the values live in the rows beneath it. The y-axis is not zero-based — a 0 baseline flattens every real gain — and its floor and ceiling are labelled so the scale is stated rather than implied. Axis labels and gridlines are chart furniture, not the hairline dividers §1 bans.
 
 ### Component notes
 
@@ -153,9 +156,14 @@ Near-zero. The only marks are a drawn chevron on the select and a stroked check 
 
 ## 7. Motion
 
-- `--dur` 180ms, `--dur-fast` 110ms.
+- `--dur` 180ms, `--dur-fast` 110ms, `--dur-page` 380ms (the Home ↔ Progress pane snap).
 - `--ease-spring` is a `linear()` spring with a visible overshoot, used for state changes that should feel physical.
 - **Shapes morph under the thumb**: `.btn:active` drops from a pill to an 18px radius and scales to 0.97; the completion box squashes to 0.88 and rounds fully. This is the one genuinely contemporary micro-interaction in the system, and it is nearly absent from the web.
+- **The spring is for `transform`, not for shape.** On `border-radius` the overshoot travels past the corner it is heading for and settles back, which reads as a wobble rather than as give; the completion box therefore springs its scale and eases its radius.
+- **State paints before it persists.** A completion toggle applies its class on the tap and lets the request follow. Awaiting the round trip first left the box in its un-checked square for the length of the request — a visible flash on anything slower than localhost — and made the tap feel dropped.
+- **Horizontal gestures need `touch-action: pan-y pinch-zoom`** on `body`. Without it the browser claims the horizontal pan and never delivers the `pointermove` events the page swipe and the set-row swipe are built on: both work under a synthetic mouse drag and silently fail under a real finger.
+- **Home and Progress are a pager, not a transition.** Both panes sit side by side on one track inside a single document; the track tracks the finger 1:1 through the drag and snaps on release. This is direct manipulation — the distinction that matters is that the pane under the thumb is the real, already-loaded thing at every point in the gesture, not a frame played back after a flick. Release commits on either distance or velocity, so a short fast flick counts — and the two directions are not priced the same: going further in asks 22% of a pane or 0.45 px/ms, coming back asks 4% or 0.12 — about a sixth of the travel, barely more than the 8px slop that claims the drag at all. That slop is the hard floor: below it the track never claims the pointer, so no threshold can commit a shorter gesture than that. Returning is the gesture you make far more often, one-handed and mid-workout, and its failure is worse: an under-shot drag back strands you on a pane you were trying to leave, while an over-eager one only shows a chart you dismiss the same way. A gesture is horizontal, vertical, or *not yet either*, and that third state carries the design: the first few pixels of a real swipe are noisy, so judging on whichever sample crosses the slop first throws away swipes that drift a little up or down on the way out. The track concedes only to vertical travel that is both substantial (36px) and decisive (1.4x the horizontal); short of that it keeps watching, which costs nothing because the pane goes on scrolling natively until the pointer is actually claimed. That bar has to be high, and the reason is the short gesture: a brief swipe covers very little horizontal ground early on, so a low give-up fires while dx is still tiny and kills exactly the quick, drifting flick that returning is meant to be. Conceding is only about when to stop watching — claiming still requires dx to out-travel dy, which a scroll never does — so waiting longer risks nothing. This is also what lets the return threshold sit as low as it does without stealing scrolls; past the first or last pane the track still moves, at 0.35 of the drag, so the end of the strip is felt rather than hit. A live drag must never carry a transition, or the transform chases the finger instead of landing on it — `.snapping` is added for the release only.
+- **The pane snap has its own easing, `--ease-page`.** `--ease` spends 83% of its travel in the first third of the duration, which is right for a control moving a few pixels under the thumb and wrong for a whole screen crossing the viewport: it reads as a lurch followed by a crawl, and slowing it down only lengthens the crawl. `--ease-page` (`cubic-bezier(0.33, 1, 0.68, 1)`) spreads the same distance far more evenly — measured on the live page: 19% at 40ms, 44% at 80ms, 75% at 150ms. It is still an ease-out, because a pane released from a drag should carry the finger's motion and settle, not start from rest.
 - Motion never explains something the layout already said. `prefers-reduced-motion` disables all of it.
 
 ## 8. Anti-patterns
@@ -188,6 +196,8 @@ Authoritative source: `:root` in `app/static/css/style.css`.
 --edge:rgba(255,255,255,.085); --edge-strong:rgba(255,255,255,.18);
 --glass:rgba(24,21,20,.86);
 --font:"Archivo"; --w-display:116%; --w-title:106%; --w-ui:100%;
+--dur:180ms; --dur-fast:110ms; --dur-page:380ms;
+--ease-page:cubic-bezier(.33,1,.68,1);
 --r-card:26px; --r-control:16px; --r-chip:10px; --r-pill:999px;
 --tap:48px; --shell:560px; --gutter:16px;
 ```

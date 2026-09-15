@@ -3,10 +3,21 @@ from flask import Blueprint, render_template
 views_bp = Blueprint("views", __name__)
 
 
+# Home and Progress are two panes of one document, so both routes render the same
+# template and differ only in which pane it opens on. Sliding between them never
+# hits the server; the URL is kept in step client-side.
+
+
 @views_bp.route("/")
 def home():
-    """Home page — list of routines."""
-    return render_template("home.html")
+    """The pager, opened on the routines pane."""
+    return render_template("pager.html", start_pane=0)
+
+
+@views_bp.route("/progress")
+def progress():
+    """The pager, opened on the progress pane — for reloads and direct links."""
+    return render_template("pager.html", start_pane=1)
 
 
 @views_bp.route("/routine/new")

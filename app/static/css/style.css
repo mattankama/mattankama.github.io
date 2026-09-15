@@ -137,7 +137,13 @@
     /* --- Motion — short, eased, and only where state actually changes --- */
     --dur: 180ms;
     --dur-fast: 110ms;
+    --dur-page: 380ms; /* Home <-> Progress slide */
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* The pane snap gets its own, gentler ease-out. `--ease` puts 83% of the
+       travel in the first third of the duration, which is right for a control
+       flicking under the thumb but reads as a lurch across a whole screen —
+       and slowing that curve down only lengthens the crawl on the end of it. */
+    --ease-page: cubic-bezier(0.33, 1, 0.68, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     /* A spring with a visible overshoot, for state changes that should feel
        physical — a set landing as complete, a control taking a press. */
@@ -179,6 +185,11 @@ body {
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
+    /* Vertical scrolling and zoom stay native; horizontal is ours. Without this
+       the browser claims the horizontal pan and never delivers the pointermove
+       events the page swipe and the set-row swipe are built on — which is why a
+       synthetic mouse drag worked and a real finger did not. */
+    touch-action: pan-y pinch-zoom;
 }
 
 /* Ambient heat behind everything. Low enough in alpha that it never moves a
@@ -262,6 +273,7 @@ svg {
 
 .home-container,
 .routine-container,
+.progress-container,
 .session-content {
     position: relative;
     z-index: 1;
@@ -272,11 +284,17 @@ svg {
 }
 
 .home-container {
+    /* A column tall enough to fill its pane, so the create action can sit at the
+       foot of the screen rather than trailing the last card. */
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
     padding-block: calc(env(safe-area-inset-top, 0px) + var(--s8))
-        calc(env(safe-area-inset-bottom, 0px) + 112px);
+        calc(env(safe-area-inset-bottom, 0px) + var(--s6));
 }
 
-.routine-container {
+.routine-container,
+.progress-container {
     padding-block: calc(env(safe-area-inset-top, 0px) + var(--s6)) var(--s12);
 }
 
@@ -413,7 +431,6 @@ svg {
    7. Floating chrome — glass bars pinned top and bottom
    -------------------------------------------------------------------------- */
 
-.home-actions,
 .complete-bar {
     position: fixed;
     inset: auto 0 0 0;
@@ -429,10 +446,25 @@ svg {
     box-shadow: inset 0 1px 0 var(--specular);
 }
 
-.home-actions .btn,
 .complete-bar .btn {
     width: 100%;
     max-width: var(--shell);
+}
+
+/* Home's create action is not chrome — it is the last thing in the page, a
+   standalone pill on the canvas. No glass, no pinned bar, and no rule above it:
+   grouping in this system is a surface, and a lone pill needs neither. */
+/* Pushed to the foot of the viewport when the list is short, and simply the last
+   thing on the page when it is long. Nothing is pinned, so no content ever
+   scrolls underneath it and it still needs no bar, glass, or divider. */
+.home-actions {
+    display: flex;
+    margin-top: auto;
+    padding-top: var(--s8);
+}
+
+.home-actions .btn {
+    width: 100%;
 }
 
 /* --------------------------------------------------------------------------
@@ -791,7 +823,7 @@ svg {
     margin-bottom: var(--s3);
 }
 
-/* Each exercise is its own card; its machines are visibly nested inside it. */
+/* Each exercise is its own card; its instances are visibly nested inside it. */
 .exercise-row {
     padding: var(--s4);
     border-radius: var(--r-card);
@@ -860,8 +892,8 @@ svg {
     color: var(--ink);
 }
 
-/* Machines sit in a well pressed into the exercise card. */
-.machine-group {
+/* Instances sit in a well pressed into the exercise card. */
+.instance-group {
     margin-top: var(--s3);
     padding: var(--s3);
     border-radius: var(--r-control);
@@ -869,23 +901,23 @@ svg {
     box-shadow: inset 0 0 0 1px var(--edge);
 }
 
-.machine-list {
+.instance-list {
     display: flex;
     flex-direction: column;
     gap: var(--s2);
 }
 
-.machine-list:not(:empty) {
+.instance-list:not(:empty) {
     margin-bottom: var(--s2);
 }
 
-.machine-row {
+.instance-row {
     display: flex;
     align-items: center;
     gap: var(--s2);
 }
 
-.machine-name-input {
+.instance-name-input {
     flex: 1 1 auto;
     min-width: 0;
     min-height: 44px;
@@ -898,12 +930,12 @@ svg {
     box-shadow: inset 0 0 0 1px var(--edge);
 }
 
-.machine-name-input::placeholder {
+.instance-name-input::placeholder {
     color: var(--ink-3);
     font-weight: 450;
 }
 
-.machine-name-input:focus {
+.instance-name-input:focus {
     outline: none;
     background: var(--surface-3);
     box-shadow:
@@ -911,7 +943,7 @@ svg {
         0 0 0 3px var(--ember-tint);
 }
 
-.machine-row .btn-text {
+.instance-row .btn-text {
     flex: 0 0 auto;
 }
 
@@ -1088,21 +1120,21 @@ svg {
     overflow-wrap: anywhere;
 }
 
-.machine-selector {
+.instance-selector {
     display: flex;
     align-items: center;
     gap: var(--s2);
 }
 
-.new-machine-inline {
+.new-instance-inline {
     margin-top: var(--s2);
 }
 
-.new-machine-inline .machine-selector {
+.new-instance-inline .instance-selector {
     flex-wrap: wrap;
 }
 
-.new-machine-inline input {
+.new-instance-inline input {
     flex: 1 1 100%;
     min-height: var(--tap);
     padding: 0 var(--s4);
@@ -1114,12 +1146,12 @@ svg {
     box-shadow: inset 0 0 0 1px var(--edge);
 }
 
-.new-machine-inline input::placeholder {
+.new-instance-inline input::placeholder {
     color: var(--ink-3);
     font-weight: 450;
 }
 
-.new-machine-inline input:focus {
+.new-instance-inline input:focus {
     outline: none;
     background: var(--surface-3);
     box-shadow:
@@ -1127,7 +1159,7 @@ svg {
         0 0 0 3px var(--ember-tint);
 }
 
-.new-machine-inline .btn {
+.new-instance-inline .btn {
     flex: 1 1 0;
     min-width: 0;
 }
@@ -1317,12 +1349,15 @@ svg {
     background: transparent;
     color: transparent;
     box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.26);
+    /* The spring belongs on scale, where the overshoot reads as give under the
+       thumb. On border-radius it overshoots past the shape it is heading for and
+       settles back — which is the wobble that made this feel unresolved. */
     transition:
-        background-color var(--dur) var(--ease),
-        box-shadow var(--dur) var(--ease),
-        border-radius var(--dur) var(--ease-spring),
+        background-color var(--dur-fast) var(--ease-in-out),
+        box-shadow var(--dur-fast) var(--ease-in-out),
+        border-radius var(--dur-fast) var(--ease-in-out),
         transform var(--dur) var(--ease-spring),
-        color var(--dur) var(--ease);
+        color var(--dur-fast) var(--ease-in-out);
 }
 
 .set-toggle:active .box {
@@ -1435,5 +1470,207 @@ svg {
 
     .set-row-surface {
         gap: var(--s1);
+    }
+}
+
+/* ==========================================================================
+   14. PROGRESS — one instance, one line, weight over time
+   --------------------------------------------------------------------------
+   Ember appears exactly once on this screen: the series line. There is no live
+   or done state here to claim it, and §2's "at most once" includes zero — so
+   following ADR 0001's reasoning, the accent belongs to the one mark the screen
+   exists to show. The readout above it is Ink; it is information, not state.
+   ========================================================================== */
+
+.progress-header {
+    margin-bottom: var(--s6);
+}
+
+.progress-pickers {
+    margin-bottom: var(--s6);
+}
+
+/* The current number, at the size the rest timer uses — this is the one figure
+   the screen exists to show. */
+.progress-readout {
+    margin-bottom: var(--s5);
+}
+
+.progress-value {
+    color: var(--ink);
+    font-size: var(--t-timer);
+    font-weight: 700;
+    font-stretch: var(--w-display);
+    letter-spacing: var(--track-display);
+    line-height: var(--lead-tight);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+
+.progress-meta {
+    margin-top: var(--s2);
+    color: var(--ink-2);
+    font-size: var(--t-sm);
+    font-weight: 550;
+}
+
+.progress-trend {
+    margin-top: var(--s1);
+    color: var(--ink-3);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+
+.progress-chart-card {
+    margin-bottom: var(--s5);
+    padding: var(--s4) var(--s3) var(--s2);
+    border-radius: var(--r-card);
+    background: var(--surface-1);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+}
+
+.progress-chart {
+    width: 100%;
+}
+
+.progress-svg {
+    display: block;
+    width: 100%;
+    overflow: visible;
+}
+
+/* Chart furniture — the labelled floor and ceiling of the scale. Not a divider
+   between two pieces of content (§1), which is the hairline this system bans. */
+.progress-grid {
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 1;
+    stroke-dasharray: 3 5;
+}
+
+.progress-axis {
+    fill: var(--ink-3);
+    font-family: var(--font);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+
+.progress-line {
+    fill: none;
+    stroke: var(--ember);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.progress-dot {
+    fill: var(--ember);
+}
+
+/* The latest session, separated from the line by a ring of the card it sits on
+   — so "where you are now" is legible without a second colour. */
+.progress-dot.latest {
+    stroke: var(--surface-1);
+    stroke-width: 3;
+}
+
+.progress-chart-note {
+    padding: var(--s6) var(--s2);
+    color: var(--ink-2);
+    font-size: var(--t-sm);
+    text-align: center;
+}
+
+/* The exact numbers. Grouping by surface, one row per session — no dividers. */
+.progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+}
+
+.progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s4);
+    min-height: var(--tap);
+    padding: var(--s2) var(--s4);
+    border-radius: var(--r-control);
+    background: var(--surface-1);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge);
+}
+
+.progress-row-date {
+    min-width: 0;
+    color: var(--ink-3);
+    font-size: var(--t-sm);
+    font-weight: 600;
+}
+
+.progress-row-value {
+    min-width: 0;
+    color: var(--ink);
+    font-size: var(--t-body);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    text-align: right;
+}
+
+/* ==========================================================================
+   15. PAGER — Home and Progress as two panes of one document
+   --------------------------------------------------------------------------
+   Not a page transition. The two panes sit side by side on one track that
+   follows the finger for the whole drag and snaps on release, so the content
+   moving under your thumb is the real thing at every point in the gesture —
+   there is nothing to load and nothing to cover.
+
+   Each pane scrolls on its own axis, which is what keeps a vertical scroll in
+   one pane from disturbing the other, and what lets the create pill sit at the
+   foot of Home while Progress is arbitrarily tall.
+   ========================================================================== */
+
+.pager {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.pager-track {
+    display: flex;
+    width: 200%;
+    height: 100%;
+    /* No transition by default: during a drag the transform must land on the
+       finger, not chase it. `.snapping` is added only for the release. */
+    will-change: transform;
+}
+
+.pager-track.snapping {
+    transition: transform var(--dur-page) var(--ease-page);
+}
+
+.pane {
+    flex: 0 0 50%;
+    width: 50%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* A pane that hits its end should not start scrolling the one behind it,
+       or hand the gesture to the browser's pull-to-refresh. */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pager-track.snapping {
+        transition: none;
     }
 }

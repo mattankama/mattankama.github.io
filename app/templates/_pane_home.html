@@ -1,11 +1,7 @@
-{% extends "base.html" %}
-{% block title %}Rattlesnake{% endblock %}
-
-{% block content %}
+{# Home pane. Markup only — the pager shell owns the scroll container. #}
 <div class="home-container">
     <header class="home-header">
         <h1 class="home-title">Rattlesnake</h1>
-        <p class="home-subtitle">Pick a routine and start lifting.</p>
     </header>
 
     <div id="routines-list" class="routines-list">
@@ -17,12 +13,9 @@
         <p class="empty-state-hint">Create one to start tracking your lifts.</p>
     </div>
 
+    <!-- A full-width pill at the foot of the pane: no glass, no divider, and
+         nothing pinned, so no card ever scrolls underneath it. -->
     <div class="home-actions">
         <a href="/routine/new" class="btn btn-secondary" id="create-routine-btn">Create Routine</a>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/home.js') }}"></script>
-{% endblock %}

@@ -1,6 +1,6 @@
 /**
  * Rattlesnake — Routine editor logic
- * Dynamic exercise list, autocomplete, machine management, save, delete.
+ * Dynamic exercise list, autocomplete, instance management, save, delete.
  *
  * Rows are built with DOM APIs rather than interpolated HTML strings: an
  * exercise name containing an apostrophe used to break the inline handler,
@@ -54,7 +54,7 @@ async function loadRoutine(id) {
         }
 
         for (const exercise of routine.exercises) {
-            addExerciseRow(exercise.name, exercise.machines || []);
+            addExerciseRow(exercise.name, exercise.instances || []);
         }
     } catch (err) {
         showError(
@@ -68,7 +68,7 @@ async function loadRoutine(id) {
 // Exercise rows
 // ---------------------------------------------------------------------------
 
-function addExerciseRow(name = "", machines = []) {
+function addExerciseRow(name = "", instances = []) {
     const list = document.getElementById("exercise-list");
     const idx = exerciseIndex++;
 
@@ -109,30 +109,30 @@ function addExerciseRow(name = "", machines = []) {
 
     header.append(wrapper, removeBtn);
 
-    // Machines, visibly nested under their exercise
-    const machineGroup = document.createElement("div");
-    machineGroup.className = "machine-group";
+    // Instances, visibly nested under their exercise
+    const instanceGroup = document.createElement("div");
+    instanceGroup.className = "instance-group";
 
-    const machineLabel = document.createElement("span");
-    machineLabel.className = "field-label";
-    machineLabel.textContent = "Machines";
+    const instanceLabel = document.createElement("span");
+    instanceLabel.className = "field-label";
+    instanceLabel.textContent = "Instances";
 
-    const machineList = document.createElement("div");
-    machineList.className = "machine-list";
-    machineList.id = `machines-${idx}`;
+    const instanceList = document.createElement("div");
+    instanceList.className = "instance-list";
+    instanceList.id = `instances-${idx}`;
 
-    const addMachineBtn = document.createElement("button");
-    addMachineBtn.type = "button";
-    addMachineBtn.className = "btn btn-muted btn-small";
-    addMachineBtn.textContent = "+ Machine";
-    addMachineBtn.addEventListener("click", () => addMachineRow(idx));
+    const addInstanceBtn = document.createElement("button");
+    addInstanceBtn.type = "button";
+    addInstanceBtn.className = "btn btn-muted btn-small";
+    addInstanceBtn.textContent = "+ Instance";
+    addInstanceBtn.addEventListener("click", () => addInstanceRow(idx));
 
-    machineGroup.append(machineLabel, machineList, addMachineBtn);
-    row.append(header, machineGroup);
+    instanceGroup.append(instanceLabel, instanceList, addInstanceBtn);
+    row.append(header, instanceGroup);
     list.appendChild(row);
 
-    for (const m of machines) {
-        addMachineRow(idx, m.name);
+    for (const m of instances) {
+        addInstanceRow(idx, m.name);
     }
 
     input.addEventListener("input", () => handleAutocomplete(input, idx));
@@ -143,23 +143,23 @@ function addExerciseRow(name = "", machines = []) {
     });
 }
 
-function addMachineRow(exerciseIdx, name = "") {
-    const container = document.getElementById(`machines-${exerciseIdx}`);
+function addInstanceRow(exerciseIdx, name = "") {
+    const container = document.getElementById(`instances-${exerciseIdx}`);
     const row = document.createElement("div");
-    row.className = "machine-row";
+    row.className = "instance-row";
 
     const input = document.createElement("input");
     input.type = "text";
-    input.className = "machine-name-input";
-    input.placeholder = "Machine name";
-    input.setAttribute("aria-label", "Machine name");
+    input.className = "instance-name-input";
+    input.placeholder = "Instance name";
+    input.setAttribute("aria-label", "Instance name");
     input.value = name;
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-text";
     removeBtn.textContent = "Remove";
-    removeBtn.setAttribute("aria-label", "Remove machine");
+    removeBtn.setAttribute("aria-label", "Remove instance");
     removeBtn.addEventListener("click", () => row.remove());
 
     row.append(input, removeBtn);
@@ -214,10 +214,10 @@ function selectAutocomplete(idx, name) {
     const exercise = allExercises.find(
         (e) => e.name.toLowerCase() === name.toLowerCase()
     );
-    if (exercise && exercise.machines && exercise.machines.length > 0) {
-        document.getElementById(`machines-${idx}`).innerHTML = "";
-        for (const m of exercise.machines) {
-            addMachineRow(idx, m.name);
+    if (exercise && exercise.instances && exercise.instances.length > 0) {
+        document.getElementById(`instances-${idx}`).innerHTML = "";
+        for (const m of exercise.instances) {
+            addInstanceRow(idx, m.name);
         }
     }
 }
@@ -242,13 +242,13 @@ async function saveRoutine(e) {
         const exName = row.querySelector(".exercise-name-input").value.trim();
         if (!exName) continue;
 
-        const machines = [];
-        for (const mi of row.querySelectorAll(".machine-name-input")) {
+        const instances = [];
+        for (const mi of row.querySelectorAll(".instance-name-input")) {
             const mName = mi.value.trim();
-            if (mName) machines.push({ name: mName });
+            if (mName) instances.push({ name: mName });
         }
 
-        exercises.push({ name: exName, machines });
+        exercises.push({ name: exName, instances });
     }
 
     const payload = { name, exercises };

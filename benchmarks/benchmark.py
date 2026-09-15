@@ -1,7 +1,7 @@
 import time
 
 from app import create_app, db
-from app.models import Exercise, Machine, Routine, Session, SessionEntry, SessionSet, routine_exercises
+from app.models import Exercise, Instance, Routine, Session, SessionEntry, SessionSet, routine_exercises
 
 def create_benchmark_data(app):
     with app.app_context():
@@ -14,16 +14,16 @@ def create_benchmark_data(app):
         db.session.add(session)
         db.session.flush()
 
-        for i in range(500):  # Create 500 exercises, machines, and session entries
+        for i in range(500):  # Create 500 exercises, instances, and session entries
             ex = Exercise(name=f"Exercise {i}")
             db.session.add(ex)
             db.session.flush()
 
-            m = Machine(exercise_id=ex.id, name=f"Machine {i}")
+            m = Instance(exercise_id=ex.id, name=f"Instance {i}")
             db.session.add(m)
             db.session.flush()
 
-            entry = SessionEntry(session_id=session.id, exercise_id=ex.id, machine_id=m.id, position=i)
+            entry = SessionEntry(session_id=session.id, exercise_id=ex.id, instance_id=m.id, position=i)
             db.session.add(entry)
             db.session.flush()
 

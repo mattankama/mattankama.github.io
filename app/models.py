@@ -21,26 +21,26 @@ class Exercise(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False)
 
-    machines = db.relationship("Machine", backref="exercise", cascade="all, delete-orphan", lazy=True)
+    instances = db.relationship("Instance", backref="exercise", cascade="all, delete-orphan", lazy=True)
 
-    def to_dict(self, include_machines=True):
+    def to_dict(self, include_instances=True):
         data = {"id": self.id, "name": self.name}
-        if include_machines:
-            data["machines"] = [m.to_dict() for m in self.machines]
+        if include_instances:
+            data["instances"] = [m.to_dict() for m in self.instances]
         return data
 
 
-class Machine(db.Model):
+class Instance(db.Model):
     """A specific piece of equipment within an exercise (e.g. 'Cybex', 'Free Weight')."""
 
-    __tablename__ = "machines"
+    __tablename__ = "instances"
 
     id = db.Column(db.Integer, primary_key=True)
     exercise_id = db.Column(db.Integer, db.ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     last_session_data = db.Column(db.JSON, nullable=True)  # [{"weight": 135, "reps": 10}, ...]
 
-    __table_args__ = (db.UniqueConstraint("exercise_id", "name", name="uq_exercise_machine"),)
+    __table_args__ = (db.UniqueConstraint("exercise_id", "name", name="uq_exercise_instance"),)
 
     def to_dict(self):
         return {
@@ -113,26 +113,26 @@ class Session(db.Model):
 
 
 class SessionEntry(db.Model):
-    """One exercise within a session, tracking which machine was used and the sets performed."""
+    """One exercise within a session, tracking which instance was used and the sets performed."""
 
     __tablename__ = "session_entries"
 
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     exercise_id = db.Column(db.Integer, db.ForeignKey("exercises.id", ondelete="SET NULL"), nullable=True)
-    machine_id = db.Column(db.Integer, db.ForeignKey("machines.id", ondelete="SET NULL"), nullable=True)
+    instance_id = db.Column(db.Integer, db.ForeignKey("instances.id", ondelete="SET NULL"), nullable=True)
     position = db.Column(db.Integer, nullable=False, default=0)
 
     exercise = db.relationship("Exercise", lazy=True)
-    machine = db.relationship("Machine", lazy=True)
+    instance = db.relationship("Instance", lazy=True)
     sets = db.relationship("SessionSet", backref="entry", cascade="all, delete-orphan", lazy="joined",
                            order_by="SessionSet.position")
 
     def to_dict(self):
         return {
             "id": self.id,
-            "exercise": self.exercise.to_dict(include_machines=True) if self.exercise else None,
-            "machine": self.machine.to_dict() if self.machine else None,
+            "exercise": self.exercise.to_dict(include_instances=True) if self.exercise else None,
+            "instance": self.instance.to_dict() if self.instance else None,
             "sets": [s.to_dict() for s in self.sets],
         }
 

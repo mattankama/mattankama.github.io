@@ -8,9 +8,11 @@
  * confirm.
  */
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", initHome);
 
-async function init() {
+// Renamed from `init`: this file now shares a document with progress.js, and a
+// bare `init` in both would leave one silently overwriting the other.
+async function initHome() {
     await loadRoutines();
 }
 

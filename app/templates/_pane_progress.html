@@ -1,0 +1,30 @@
+{# Progress pane. No back control: this is a pane, not a page — slide right to
+   return. #}
+<div class="progress-container">
+    <header class="progress-header">
+        <h1 class="page-title">Progress</h1>
+    </header>
+
+    <div class="progress-pickers">
+        <div class="form-group">
+            <span class="field-label" id="exercise-picker-label">Exercise</span>
+            <div id="exercise-picker"><!-- CustomSelect mounts here --></div>
+        </div>
+
+        <!-- Hidden when the exercise has only one instance with history: there is
+             nothing to choose, and an empty choice is just another thing to read. -->
+        <div class="form-group" id="instance-picker-group" style="display: none;">
+            <span class="field-label" id="instance-picker-label">Instance</span>
+            <div id="instance-picker"><!-- CustomSelect mounts here --></div>
+        </div>
+    </div>
+
+    <div id="progress-result" class="progress-result">
+        <!-- Populated by JS -->
+    </div>
+
+    <div id="progress-empty" class="empty-state" style="display: none;">
+        <p class="empty-state-title">Nothing logged yet</p>
+        <p class="empty-state-hint">Complete a session on an instance and it lands here.</p>
+    </div>
+</div>

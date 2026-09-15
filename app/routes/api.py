@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request, abort, make_response
 from sqlalchemy.orm import joinedload, selectinload
 
 from app import db
-from app.models import (Exercise, Machine, Routine, Session, SessionEntry,
+from app.models import (Exercise, Instance, Routine, Session, SessionEntry,
                         SessionSet, routine_exercises)
 
 api_bp = Blueprint("api", __name__)
@@ -25,8 +25,8 @@ def get_or_404_json(model, ident, error_message):
 
 @api_bp.route("/exercises", methods=["GET"])
 def list_exercises():
-    """List all exercises with their machines."""
-    exercises = Exercise.query.options(joinedload(Exercise.machines)).order_by(Exercise.name).all()
+    """List all exercises with their instances."""
+    exercises = Exercise.query.options(joinedload(Exercise.instances)).order_by(Exercise.name).all()
     return jsonify([e.to_dict() for e in exercises])
 
 
@@ -52,62 +52,134 @@ def create_exercise():
 
 @api_bp.route("/exercises/<int:exercise_id>", methods=["DELETE"])
 def delete_exercise(exercise_id):
-    """Delete an exercise and all its machines."""
+    """Delete an exercise and all its instances."""
     exercise = get_or_404_json(Exercise, exercise_id, "Exercise not found")
     db.session.delete(exercise)
     db.session.commit()
     return "", 204
 
 
+def _top_set(sets):
+    """The heaviest set of an entry — the value Progress plots.
+
+    Blank rows (weight 0) are an artifact of the set editor, not a lift, so they
+    never become a data point. A tie on weight breaks to the higher rep count:
+    of two sets at the same load, the longer one is the harder one.
+    """
+    working = [s for s in sets if (s.weight or 0) > 0]
+    if not working:
+        return None
+    return max(working, key=lambda s: (s.weight, s.reps))
+
+
+@api_bp.route("/exercises/<int:exercise_id>/progress", methods=["GET"])
+def exercise_progress(exercise_id):
+    """Top-set weight over time for one exercise, split by instance.
+
+    The split is not a display choice — per CONTEXT.md, history is per-instance,
+    because the same weight on two instances is not the same load. A single line
+    across instances would read an instance switch as a PR or a plateau.
+
+    Only completed sessions count: an in-progress session is pre-filled from the
+    instance's lastSession, so charting it would plot a lift that hasn't happened.
+
+    The whole exercise ships in one payload, so switching instances on the client
+    costs no round trip.
+    """
+    exercise = get_or_404_json(Exercise, exercise_id, "Exercise not found")
+
+    rows = (
+        db.session.query(SessionEntry, Session.completed_at)
+        .join(Session, SessionEntry.session_id == Session.id)
+        .filter(
+            SessionEntry.exercise_id == exercise.id,
+            SessionEntry.instance_id.isnot(None),
+            Session.status == "completed",
+        )
+        .options(joinedload(SessionEntry.instance))
+        .order_by(Session.completed_at, Session.id)
+        .all()
+    )
+
+    series = {}
+    for entry, completed_at in rows:
+        top = _top_set(entry.sets)
+        if top is None or entry.instance is None:
+            continue
+        instance = series.setdefault(
+            entry.instance_id,
+            {"id": entry.instance_id, "name": entry.instance.name, "points": []},
+        )
+        instance["points"].append({
+            "session_id": entry.session_id,
+            # `date` is what gets labelled; `at` carries the time of day, which
+            # is what keeps two sessions logged on one day from landing on the
+            # same point of the x-axis.
+            "date": completed_at.date().isoformat() if completed_at else None,
+            "at": completed_at.isoformat() if completed_at else None,
+            "weight": top.weight,
+            "reps": top.reps,
+        })
+
+    # Most-logged instance first: the client picks series[0] and is right by
+    # default, without having to decide anything itself.
+    instances = sorted(series.values(), key=lambda m: (-len(m["points"]), m["name"]))
+
+    return jsonify({
+        "exercise": exercise.to_dict(include_instances=False),
+        "instances": instances,
+    })
+
+
 # ---------------------------------------------------------------------------
-# Machines
+# Instances
 # ---------------------------------------------------------------------------
 
-def _get_machine_or_404(machine_id):
-    """Helper to get a machine by ID or abort with 404."""
-    machine = db.session.get(Machine, machine_id)
-    if not machine:
-        abort(make_response(jsonify({"error": "Machine not found"}), 404))
-    return machine
+def _get_instance_or_404(instance_id):
+    """Helper to get an instance by ID or abort with 404."""
+    instance = db.session.get(Instance, instance_id)
+    if not instance:
+        abort(make_response(jsonify({"error": "Instance not found"}), 404))
+    return instance
 
 
-@api_bp.route("/exercises/<int:exercise_id>/machines", methods=["POST"])
-def create_machine(exercise_id):
-    """Add a machine to an exercise."""
+@api_bp.route("/exercises/<int:exercise_id>/instances", methods=["POST"])
+def create_instance(exercise_id):
+    """Add an instance to an exercise."""
     exercise = get_or_404_json(Exercise, exercise_id, "Exercise not found")
 
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
     if not name:
-        return jsonify({"error": "Machine name is required"}), 400
+        return jsonify({"error": "Instance name is required"}), 400
 
     # Check for duplicate
-    existing = Machine.query.filter_by(exercise_id=exercise_id, name=name).first()
+    existing = Instance.query.filter_by(exercise_id=exercise_id, name=name).first()
     if existing:
         return jsonify(existing.to_dict()), 200
 
-    machine = Machine(exercise_id=exercise_id, name=name)
-    db.session.add(machine)
+    instance = Instance(exercise_id=exercise_id, name=name)
+    db.session.add(instance)
     db.session.commit()
-    return jsonify(machine.to_dict()), 201
+    return jsonify(instance.to_dict()), 201
 
 
-@api_bp.route("/machines/<int:machine_id>", methods=["DELETE"])
-def delete_machine(machine_id):
-    """Delete a machine."""
-    machine = _get_machine_or_404(machine_id)
-    db.session.delete(machine)
+@api_bp.route("/instances/<int:instance_id>", methods=["DELETE"])
+def delete_instance(instance_id):
+    """Delete an instance."""
+    instance = _get_instance_or_404(instance_id)
+    db.session.delete(instance)
     db.session.commit()
     return "", 204
 
 
-@api_bp.route("/machines/<int:machine_id>/last-session", methods=["GET"])
-def get_machine_last_session(machine_id):
-    """Get last session stats for a machine."""
-    machine = _get_machine_or_404(machine_id)
+@api_bp.route("/instances/<int:instance_id>/last-session", methods=["GET"])
+def get_instance_last_session(instance_id):
+    """Get last session stats for an instance."""
+    instance = _get_instance_or_404(instance_id)
     return jsonify({
-        "machine_id": machine.id,
-        "sets": machine.last_session_data or [],
+        "instance_id": instance.id,
+        "sets": instance.last_session_data or [],
     })
 
 
@@ -140,13 +212,13 @@ def _add_exercises_to_routine(routine, exercises_data):
             db.session.flush()
             existing_exercises[ex_name_lower] = exercise
 
-        # Create machines if specified
-        existing_machines = {m.name for m in Machine.query.filter_by(exercise_id=exercise.id).all()}
-        for m_data in ex_data.get("machines", []):
+        # Create instances if specified
+        existing_instances = {m.name for m in Instance.query.filter_by(exercise_id=exercise.id).all()}
+        for m_data in ex_data.get("instances", []):
             m_name = (m_data.get("name") or "").strip()
-            if m_name and m_name not in existing_machines:
-                db.session.add(Machine(exercise_id=exercise.id, name=m_name))
-                existing_machines.add(m_name)
+            if m_name and m_name not in existing_instances:
+                db.session.add(Instance(exercise_id=exercise.id, name=m_name))
+                existing_instances.add(m_name)
 
         # Link to routine
         db.session.execute(
@@ -165,9 +237,9 @@ def list_routines():
 
 @api_bp.route("/routines", methods=["POST"])
 def create_routine():
-    """Create a routine with exercises and optional machines.
+    """Create a routine with exercises and optional instances.
 
-    Body: {"name": "...", "exercises": [{"name": "...", "machines": [{"name": "..."}]}]}
+    Body: {"name": "...", "exercises": [{"name": "...", "instances": [{"name": "..."}]}]}
     """
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
@@ -187,7 +259,7 @@ def create_routine():
 
 @api_bp.route("/routines/<int:routine_id>", methods=["GET"])
 def get_routine(routine_id):
-    """Get a routine with its exercises and machines."""
+    """Get a routine with its exercises and instances."""
     routine = get_or_404_json(Routine, routine_id, "Routine not found")
     return jsonify(routine.to_dict())
 
@@ -218,7 +290,7 @@ def update_routine(routine_id):
 
 @api_bp.route("/routines/<int:routine_id>", methods=["DELETE"])
 def delete_routine(routine_id):
-    """Delete a routine definition only. Exercises, machines, stats, sessions untouched."""
+    """Delete a routine definition only. Exercises, instances, stats, sessions untouched."""
     routine = _get_routine_or_404(routine_id)
     db.session.delete(routine)
     db.session.commit()
@@ -236,6 +308,28 @@ def _get_session_or_404(session_id):
     if not session:
         abort(make_response(jsonify({"error": "Session not found"}), 404))
     return session
+
+
+def _lay_out_sets_from_instance(entry, instance):
+    """Replace an entry's sets with the instance's lastSession.
+
+    An instance with no history still gets one blank row, so there is always
+    something to type into rather than an empty container.
+    """
+    SessionSet.query.filter_by(entry_id=entry.id).delete()
+
+    last_data = instance.last_session_data or []
+    if not last_data:
+        db.session.add(SessionSet(entry_id=entry.id, weight=0, reps=0, position=0))
+        return
+
+    for i, set_data in enumerate(last_data):
+        db.session.add(SessionSet(
+            entry_id=entry.id,
+            weight=set_data.get("weight", 0),
+            reps=set_data.get("reps", 0),
+            position=i,
+        ))
 
 
 @api_bp.route("/sessions", methods=["POST"])
@@ -261,6 +355,16 @@ def start_session():
         )
         db.session.add(entry)
 
+        # One instance is not a choice, it is the answer. Assign it and lay the
+        # sets out now, so the lifter arrives at a screen they can lift from
+        # instead of one asking them to confirm the only option there is.
+        # Done here rather than on the client so it is one transaction, not one
+        # round trip per exercise.
+        if len(exercise.instances) == 1:
+            db.session.flush()  # entry.id, which the sets reference
+            entry.instance_id = exercise.instances[0].id
+            _lay_out_sets_from_instance(entry, exercise.instances[0])
+
     db.session.commit()
     return jsonify(session.to_dict()), 201
 
@@ -272,20 +376,20 @@ def get_session(session_id):
     return jsonify(session.to_dict())
 
 
-def update_machine_stats(session):
-    """Update last_session_data for all machines used in this session."""
-    machine_ids = {entry.machine_id for entry in session.entries if entry.machine_id and entry.sets}
-    if not machine_ids:
+def update_instance_stats(session):
+    """Update last_session_data for all instances used in this session."""
+    instance_ids = {entry.instance_id for entry in session.entries if entry.instance_id and entry.sets}
+    if not instance_ids:
         return
 
-    machines = db.session.query(Machine).filter(Machine.id.in_(machine_ids)).all()
-    machine_map = {m.id: m for m in machines}
+    instances = db.session.query(Instance).filter(Instance.id.in_(instance_ids)).all()
+    instance_map = {m.id: m for m in instances}
 
     for entry in session.entries:
-        if entry.machine_id and entry.sets:
-            machine = machine_map.get(entry.machine_id)
-            if machine:
-                machine.last_session_data = [
+        if entry.instance_id and entry.sets:
+            instance = instance_map.get(entry.instance_id)
+            if instance:
+                instance.last_session_data = [
                     {"weight": s.weight, "reps": s.reps}
                     for s in sorted(entry.sets, key=lambda s: s.position)
                 ]
@@ -293,7 +397,7 @@ def update_machine_stats(session):
 
 @api_bp.route("/sessions/<int:session_id>/complete", methods=["PUT"])
 def complete_session(session_id):
-    """Complete a session. Updates each machine's lastSession with all sets."""
+    """Complete a session. Updates each instance's lastSession with all sets."""
     session = _get_session_or_404(session_id)
 
     if session.status == "completed":
@@ -302,17 +406,17 @@ def complete_session(session_id):
     session.status = "completed"
     session.completed_at = datetime.now(timezone.utc)
 
-    # Update lastSession for each machine used
-    machine_ids = [entry.machine_id for entry in session.entries if entry.machine_id and entry.sets]
-    if machine_ids:
-        machines = Machine.query.filter(Machine.id.in_(machine_ids)).all()
-        machine_dict = {machine.id: machine for machine in machines}
+    # Update lastSession for each instance used
+    instance_ids = [entry.instance_id for entry in session.entries if entry.instance_id and entry.sets]
+    if instance_ids:
+        instances = Instance.query.filter(Instance.id.in_(instance_ids)).all()
+        instance_dict = {instance.id: instance for instance in instances}
 
         for entry in session.entries:
-            if entry.machine_id and entry.sets:
-                machine = machine_dict.get(entry.machine_id)
-                if machine:
-                    machine.last_session_data = [
+            if entry.instance_id and entry.sets:
+                instance = instance_dict.get(entry.instance_id)
+                if instance:
+                    instance.last_session_data = [
                         {"weight": s.weight, "reps": s.reps}
                         for s in sorted(entry.sets, key=lambda s: s.position)
                     ]
@@ -326,59 +430,43 @@ def complete_session(session_id):
 # ---------------------------------------------------------------------------
 
 
-@api_bp.route("/session-entries/<int:entry_id>/machine", methods=["PUT"])
-def switch_entry_machine(entry_id):
-    """Switch the machine for a session entry."""
+@api_bp.route("/session-entries/<int:entry_id>/instance", methods=["PUT"])
+def switch_entry_instance(entry_id):
+    """Switch the instance for a session entry."""
     entry = get_or_404_json(SessionEntry, entry_id, "Session entry not found")
 
     data = request.get_json(silent=True) or {}
-    machine_id = data.get("machine_id")
-    if not machine_id:
-        return jsonify({"error": "machine_id is required"}), 400
+    instance_id = data.get("instance_id")
+    if not instance_id:
+        return jsonify({"error": "instance_id is required"}), 400
 
-    machine = _get_machine_or_404(machine_id)
+    instance = _get_instance_or_404(instance_id)
 
-    entry.machine_id = machine_id
+    entry.instance_id = instance_id
     db.session.commit()
 
     return jsonify(
         {
             "entry": entry.to_dict(),
-            "last_session": machine.last_session_data or [],
+            "last_session": instance.last_session_data or [],
         }
     )
 
 
 @api_bp.route("/session-entries/<int:entry_id>/prefill", methods=["POST"])
 def prefill_entry(entry_id):
-    """Assign machine to entry and auto-create sets from machine's lastSession."""
+    """Assign instance to entry and auto-create sets from instance's lastSession."""
     entry = get_or_404_json(SessionEntry, entry_id, "Session entry not found")
 
     data = request.get_json(silent=True) or {}
-    machine_id = data.get("machine_id")
-    if not machine_id:
-        return jsonify({"error": "machine_id is required"}), 400
+    instance_id = data.get("instance_id")
+    if not instance_id:
+        return jsonify({"error": "instance_id is required"}), 400
 
-    machine = _get_machine_or_404(machine_id)
+    instance = _get_instance_or_404(instance_id)
 
-    entry.machine_id = machine_id
-
-    # Clear existing sets
-    SessionSet.query.filter_by(entry_id=entry.id).delete()
-
-    # Pre-fill from machine's last session, or create one empty set
-    last_data = machine.last_session_data or []
-    if last_data:
-        for i, set_data in enumerate(last_data):
-            s = SessionSet(
-                entry_id=entry.id,
-                weight=set_data.get("weight", 0),
-                reps=set_data.get("reps", 0),
-                position=i,
-            )
-            db.session.add(s)
-    else:
-        db.session.add(SessionSet(entry_id=entry.id, weight=0, reps=0, position=0))
+    entry.instance_id = instance_id
+    _lay_out_sets_from_instance(entry, instance)
 
     db.session.commit()
 

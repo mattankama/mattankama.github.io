@@ -1,7 +1,7 @@
 # Rattlesnake
 
 A mobile-first Flask web app for logging weightlifting workouts. Every exercise auto-fills with
-the sets, reps, and weight from the last time it was performed on that machine, so the lifter
+the sets, reps, and weight from the last time it was performed on that instance, so the lifter
 can start the set immediately and only adjust what changed. All data is on-device SQLite — no
 account, no cloud sync.
 
@@ -11,7 +11,7 @@ Read the document before working in the area it covers. Do not reconstruct these
 
 - **[.claude/CONTEXT.md](./CONTEXT.md)** — domain model, glossary, user flows, deletion
   rules, and explicit non-goals. Read before touching `app/models.py` or `app/routes/`, or
-  before using the words *exercise*, *machine*, *routine*, *session*, *set*, or *lastSession* —
+  before using the words *exercise*, *instance*, *routine*, *session*, *set*, or *lastSession* —
   each is a defined term here and they do not mean what they'd mean in another lifting app.
 - **[.claude/design_guidelines.md](./design_guidelines.md)** — the FORGE design system, as
   actually implemented in `app/static/css/style.css`. Read before any change to markup, CSS, or
@@ -43,7 +43,7 @@ Two things to know about the bundled library, because its skills were written ge
 | `app/models.py` | SQLAlchemy models — the domain model in CONTEXT.md, in code |
 | `app/routes/api.py` | JSON API; the bulk of the logic and the bulk of the test surface |
 | `app/routes/views.py` | Page routes; thin, renders the four templates |
-| `app/templates/` | `base`, `home`, `routine`, `session` |
+| `app/templates/` | `base`, `pager` (+ `_pane_home`, `_pane_progress`), `routine`, `session` |
 | `app/static/css/style.css` | The whole FORGE system; the only stylesheet |
 | `tests/` | pytest suite, `conftest.py` holds the fixtures |
 | `run.py` | Dev entrypoint, binds `0.0.0.0:5001` |
@@ -55,6 +55,8 @@ Two things to know about the bundled library, because its skills were written ge
   Currently 98 tests, 97%. Fix failures and coverage regressions immediately — never report work
   as done while either is red, and never lower the bar to make a run pass.
 - **The dev server is port 5001** — `python3 run.py`. Don't substitute another port.
+  It runs in debug by default, so code and template edits reload themselves; use
+  `FLASK_DEBUG=0 python3 run.py` for a quiet, non-reloading server. Debug = True
 - **Mobile is the target, not an afterthought.** Every change has to hold up one-handed at
   phone width, mid-set, in bad gym light. Interactive controls stay ≥44×44px.
 - **Dark-mode-only.** Light mode is deliberately unimplemented; don't add it, and don't add a

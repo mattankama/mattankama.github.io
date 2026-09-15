@@ -1,7 +1,7 @@
 import pytest
 
 from app import create_app, db as _db
-from app.models import Exercise, Machine, Routine, Session, SessionEntry, SessionSet, routine_exercises
+from app.models import Exercise, Instance, Routine, Session, SessionEntry, SessionSet, routine_exercises
 
 
 @pytest.fixture
@@ -47,10 +47,10 @@ def create_exercise(db):
 
 
 @pytest.fixture
-def create_machine(db):
-    """Factory fixture to create a machine."""
-    def _create(exercise_id, name="Machine A"):
-        m = Machine(exercise_id=exercise_id, name=name)
+def create_instance(db):
+    """Factory fixture to create an instance."""
+    def _create(exercise_id, name="Cybex"):
+        m = Instance(exercise_id=exercise_id, name=name)
         db.session.add(m)
         db.session.commit()
         return m
@@ -81,6 +81,42 @@ def create_routine(db):
         db.session.commit()
         return routine
     return _create
+
+
+@pytest.fixture
+def record_session(db):
+    """Factory: write a dated, completed session straight to the DB.
+
+    Progress reads a *series*, and the live API can only produce one session at a
+    time with whatever timestamp "now" happens to be. These tests need to lay
+    down several sessions on known dates, so they go through the models.
+    """
+    def _record(exercise, instance, sets, completed_at=None, status="completed"):
+        session = Session(
+            routine_name="Push Day",
+            status=status,
+            completed_at=completed_at if status == "completed" else None,
+        )
+        db.session.add(session)
+        db.session.flush()
+
+        entry = SessionEntry(
+            session_id=session.id,
+            exercise_id=exercise.id,
+            instance_id=instance.id if instance else None,
+            position=0,
+        )
+        db.session.add(entry)
+        db.session.flush()
+
+        for i, (weight, reps) in enumerate(sets):
+            db.session.add(
+                SessionSet(entry_id=entry.id, weight=weight, reps=reps, position=i)
+            )
+
+        db.session.commit()
+        return session
+    return _record
 
 
 @pytest.fixture

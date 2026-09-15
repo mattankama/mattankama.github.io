@@ -74,8 +74,8 @@ function clearError(container) {
  * Custom dropdown component — replaces native <select> (§10 checklist).
  * Usage:
  *   const dropdown = new CustomSelect(container, {
- *       placeholder: 'Select machine',
- *       options: [{ value: '1', label: 'Machine A' }, ...],
+ *       placeholder: 'Select instance',
+ *       options: [{ value: '1', label: 'Cybex' }, ...],
  *       selectedValue: '1',
  *       onChange: (value) => { ... },
  *   });
@@ -331,12 +331,31 @@ class CustomSelect {
         this.render();
     }
 
-    /** Focus the trigger (used after inline machine creation) */
+    /** Focus the trigger (used after inline instance creation) */
     focus() {
         this.triggerEl.focus();
     }
 
+    /**
+     * Detach this dropdown. A container that gets re-rendered leaves its old
+     * instance in the registry holding a detached `labelEl`, so it keeps being
+     * iterated by the shared click handler and still answers to setValue() —
+     * updating nothing the user can see. Anything that remounts a dropdown into
+     * a container it has used before must destroy the previous one.
+     */
+    destroy() {
+        this.close();
+        CustomSelect._unregister(this);
+    }
+
     // -- instance registry: one document listener for all dropdowns, not one each --
+
+    static _unregister(instance) {
+        const i = CustomSelect._instances.indexOf(instance);
+        if (i >= 0) {
+            CustomSelect._instances.splice(i, 1);
+        }
+    }
 
     static _register(instance) {
         CustomSelect._instances.push(instance);
@@ -360,3 +379,4 @@ class CustomSelect {
 CustomSelect._instances = [];
 CustomSelect._listenerBound = false;
 CustomSelect._seq = 0;
+
