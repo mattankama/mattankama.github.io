@@ -67,7 +67,6 @@ A minimal, fast weightlifting companion web app for guiding workouts session-to-
 - Flat list of saved routines
 - Each routine shows its name with "Start" and "Edit" actions
 - "Create Routine" action always available
-- Dark mode toggle in header
 
 ### 2. Create / Edit Routine
 Bare-bones screen, nothing beyond what's needed:

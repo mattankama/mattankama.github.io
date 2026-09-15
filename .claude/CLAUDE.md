@@ -9,15 +9,15 @@ account, no cloud sync.
 
 Read the document before working in the area it covers. Do not reconstruct these from the code.
 
-- **[.claude/CONTEXT.md](.claude/CONTEXT.md)** — domain model, glossary, user flows, deletion
+- **[.claude/CONTEXT.md](./CONTEXT.md)** — domain model, glossary, user flows, deletion
   rules, and explicit non-goals. Read before touching `app/models.py` or `app/routes/`, or
   before using the words *exercise*, *machine*, *routine*, *session*, *set*, or *lastSession* —
   each is a defined term here and they do not mean what they'd mean in another lifting app.
-- **[.claude/design_guidelines.md](.claude/design_guidelines.md)** — the FORGE design system, as
+- **[.claude/design_guidelines.md](./design_guidelines.md)** — the FORGE design system, as
   actually implemented in `app/static/css/style.css`. Read before any change to markup, CSS, or
   visual behaviour. If the code and that document disagree, one of them is a bug — say which,
   don't silently pick a side.
-- **[docs/adr/](docs/adr/)** — architecture decision records. Check for one covering your area
+- **[docs/adr/](../docs/adr/)** — architecture decision records. Check for one covering your area
   before changing a decision it locks in.
 
 ## Skills
