@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{% if routine_id %}Edit Routine{% else %}New Routine{% endif %} — Rattlesnake{% endblock %}
+{% block title %}Routine — Rattlesnake{% endblock %}
 
 {% block content %}
 <div class="routine-container">
     <header class="routine-header">
         <a href="/" class="back-link">← Back</a>
-        <h1 class="page-title">{% if routine_id %}Edit Routine{% else %}New Routine{% endif %}</h1>
+        <h1 class="page-title" id="page-title">New Routine</h1>
     </header>
 
     <form id="routine-form" class="routine-form">
@@ -28,8 +28,7 @@
         </div>
     </form>
 
-    {% if routine_id %}
-    <section class="danger-zone">
+    <section class="danger-zone" id="danger-zone">
         <button type="button" class="btn btn-danger" id="delete-routine-btn">Delete Routine</button>
         <div class="confirm-box" id="delete-confirm" style="display: none;">
             <p class="confirm-message" id="delete-confirm-message">
@@ -41,14 +40,27 @@
             </div>
         </div>
     </section>
-    {% endif %}
 </div>
 
-{% if routine_id %}
-<script>window.ROUTINE_ID = {{ routine_id }};</script>
-{% else %}
-<script>window.ROUTINE_ID = null;</script>
-{% endif %}
+<script>
+    // `/routine/` is the new-routine form and `/routine/?id=12` edits an
+    // existing one. Reading the id here rather than rendering two different
+    // pages is what lets one file on a static host serve both.
+    (function () {
+        const id = new URLSearchParams(location.search).get("id");
+        window.ROUTINE_ID = id && /^\d+$/.test(id) ? Number(id) : null;
+
+        if (window.ROUTINE_ID) {
+            document.title = "Edit Routine — Rattlesnake";
+            document.getElementById("page-title").textContent = "Edit Routine";
+        } else {
+            // There is nothing to delete yet. Removing the section rather than
+            // hiding it keeps routine.js's "is there a delete button?" check
+            // answering the same question it always has.
+            document.getElementById("danger-zone").remove();
+        }
+    })();
+</script>
 {% endblock %}
 
 {% block scripts %}

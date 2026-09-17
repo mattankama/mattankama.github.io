@@ -1,4 +1,10 @@
-"""Tests for view routes — page rendering."""
+"""Tests for view routes — page rendering.
+
+The pages carry no data. Since the API moved onto the device, a template's whole
+job is to ship markup and the scripts that fill it, so these tests check exactly
+that and nothing about routines or sessions — those assertions live in
+tests/js/local-api.test.js, against the code that now produces them.
+"""
 
 
 class TestViewRoutes:
@@ -64,46 +70,24 @@ class TestViewRoutes:
         assert b"progress.js" in resp.data
         assert b"home.js" in resp.data  # the other pane is live too
 
-    def test_new_routine_page(self, client):
-        resp = client.get("/routine/new")
+    def test_routine_page(self, client):
+        resp = client.get("/routine/")
         assert resp.status_code == 200
         assert b"New Routine" in resp.data
 
-    def test_new_routine_has_form(self, client):
-        resp = client.get("/routine/new")
+    def test_routine_page_has_form(self, client):
+        resp = client.get("/routine/")
         assert b"routine-form" in resp.data
         assert b"routine-name" in resp.data
 
-    def test_edit_routine_page(self, client):
-        # Create a routine first
-        r = client.post("/api/routines", json={"name": "Push Day", "exercises": []}).get_json()
-        resp = client.get(f"/routine/{r['id']}/edit")
-        assert resp.status_code == 200
-        assert b"Edit Routine" in resp.data
-
-    def test_edit_routine_has_routine_id(self, client):
-        r = client.post("/api/routines", json={"name": "Push Day", "exercises": []}).get_json()
-        resp = client.get(f"/routine/{r['id']}/edit")
-        assert f"ROUTINE_ID = {r['id']}".encode() in resp.data
-
     def test_session_page(self, client):
-        r = client.post("/api/routines", json={"name": "Push Day", "exercises": []}).get_json()
-        s = client.post("/api/sessions", json={"routine_id": r["id"]}).get_json()
-        resp = client.get(f"/session/{s['id']}")
+        resp = client.get("/session/")
         assert resp.status_code == 200
         assert b"timer-display" in resp.data
         assert b"complete-session-btn" in resp.data
 
-    def test_session_page_has_session_id(self, client):
-        r = client.post("/api/routines", json={"name": "Push Day", "exercises": []}).get_json()
-        s = client.post("/api/sessions", json={"routine_id": r["id"]}).get_json()
-        resp = client.get(f"/session/{s['id']}")
-        assert f"SESSION_ID = {s['id']}".encode() in resp.data
-
     def test_session_page_has_timer(self, client):
-        r = client.post("/api/routines", json={"name": "Push Day", "exercises": []}).get_json()
-        s = client.post("/api/sessions", json={"routine_id": r["id"]}).get_json()
-        resp = client.get(f"/session/{s['id']}")
+        resp = client.get("/session/")
         assert b"timer-bar" in resp.data
         assert b"00:00" in resp.data
 
@@ -117,11 +101,89 @@ class TestViewRoutes:
         assert b"home.js" in resp.data
 
     def test_js_loads_on_routine(self, client):
-        resp = client.get("/routine/new")
-        assert b"routine.js" in resp.data
+        assert b"routine.js" in client.get("/routine/").data
 
     def test_js_loads_on_session(self, client):
-        r = client.post("/api/routines", json={"name": "Push Day", "exercises": []}).get_json()
-        s = client.post("/api/sessions", json={"routine_id": r["id"]}).get_json()
-        resp = client.get(f"/session/{s['id']}")
-        assert b"session.js" in resp.data
+        assert b"session.js" in client.get("/session/").data
+
+
+class TestPagesCarryNoData:
+    """A page must be the same bytes for every lifter, or it cannot be a file."""
+
+    def test_routine_page_is_identical_with_and_without_an_id(self, client):
+        """One file serves both the new-routine form and every edit URL."""
+        assert client.get("/routine/").data == client.get("/routine/?id=7").data
+
+    def test_session_page_is_identical_for_any_session(self, client):
+        assert client.get("/session/").data == client.get("/session/?id=42").data
+
+    def test_routine_page_reads_its_id_from_the_query_string(self, client):
+        resp = client.get("/routine/")
+        assert b"window.ROUTINE_ID" in resp.data
+        assert b"URLSearchParams" in resp.data
+
+    def test_session_page_reads_its_id_from_the_query_string(self, client):
+        resp = client.get("/session/")
+        assert b"window.SESSION_ID" in resp.data
+        assert b"URLSearchParams" in resp.data
+
+
+class TestDataLayerWiring:
+    """The on-device API has to be loaded, in order, before anything calls it."""
+
+    # Matched as `js/<name>"` — the src attribute — so a filename mentioned in a
+    # comment cannot stand in for the script tag that actually loads it.
+    LAYER = (b'js/store.js"', b'js/local-api.js"', b'js/persist.js"', b'js/app.js"')
+
+    def test_every_page_loads_the_data_layer(self, client):
+        for path in ("/", "/progress", "/routine/", "/session/"):
+            data = client.get(path).data
+            for script in self.LAYER:
+                assert script in data, f"{script!r} missing from {path}"
+
+    def test_data_layer_loads_in_dependency_order(self, client):
+        data = client.get("/").data
+        order = [data.index(s) for s in self.LAYER]
+        assert order == sorted(order)
+
+    def test_screen_scripts_load_after_the_data_layer(self, client):
+        data = client.get("/").data
+        assert data.index(b'js/app.js"') < data.index(b'js/home.js"')
+
+
+class TestServiceWorker:
+    """Offline is the gym case, and scope is why the worker sits at the root."""
+
+    def test_served_from_the_root(self, client):
+        resp = client.get("/sw.js")
+        assert resp.status_code == 200
+        assert "javascript" in resp.headers["Content-Type"]
+
+    def test_not_cached(self, client):
+        """A cached worker would pin an installed app to the day it was installed."""
+        assert "no-cache" in client.get("/sw.js").headers["Cache-Control"]
+
+    def test_precaches_the_whole_app(self, client):
+        data = client.get("/sw.js").data
+        for asset in (b'"/"', b'"/progress"', b'"/routine/"', b'"/session/"',
+                      b"style.css", b"local-api.js", b"archivo-latin-var.woff2"):
+            assert asset in data, asset
+
+
+class TestRetiredRoutes:
+    """The old path-segment URLs cannot exist on a static host, so they are gone."""
+
+    def test_old_new_routine_url_is_gone(self, client):
+        assert client.get("/routine/new").status_code == 404
+
+    def test_old_edit_routine_url_is_gone(self, client):
+        assert client.get("/routine/1/edit").status_code == 404
+
+    def test_old_session_url_is_gone(self, client):
+        assert client.get("/session/1").status_code == 404
+
+    def test_routine_without_trailing_slash_redirects(self, client):
+        """So a hand-typed /routine still lands, on Flask and on a static host alike."""
+        resp = client.get("/routine")
+        assert resp.status_code in (301, 308)
+        assert resp.headers["Location"].endswith("/routine/")

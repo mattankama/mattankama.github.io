@@ -1,4 +1,8 @@
+# Flask renders the four pages — in dev, and once more at build time to write
+# dist/. It is not part of what gets deployed; that is static files only.
 flask==3.1.*
-flask-sqlalchemy==3.1.*
+
+# Tests. The suite for the code that actually runs on the phone is JavaScript:
+# `node --test tests/js/*.test.js`, which needs nothing installed.
 pytest==8.*
 pytest-cov==6.*

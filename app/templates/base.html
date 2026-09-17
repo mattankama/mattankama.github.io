@@ -31,7 +31,28 @@
 
     {% block content %}{% endblock %}
 
+    <!-- The data layer, in dependency order: the store, the API that reads and
+         writes it, and the IndexedDB mirror that outlives the tab. app.js wires
+         them together and every screen script below depends on that. -->
+    <script src="{{ url_for('static', filename='js/store.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/local-api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/persist.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     {% block scripts %}{% endblock %}
+
+    <script>
+        // Skipped on localhost: a service worker needs a secure context, so the
+        // phone hitting the dev server over LAN http never reaches this anyway,
+        // but localhost *is* secure — and a cache-first worker there would serve
+        // stale files straight past Flask's reloader.
+        if ("serviceWorker" in navigator &&
+            !["localhost", "127.0.0.1"].includes(location.hostname)) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js").catch((err) => {
+                    console.warn("[rattlesnake] service worker did not register", err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

@@ -4,33 +4,80 @@
  */
 
 /**
- * Fetch JSON wrapper with error handling.
+ * The store, loaded from IndexedDB. Every screen waits on this before its first
+ * call, so nothing can read an empty database while the rows are still arriving.
+ */
+const appReady = RattlesnakePersist.boot(
+    RattlesnakeStore.createStore,
+    RattlesnakeStore.TABLES,
+    showStorageWarning,
+).then((result) => {
+    if (!result.durable) showStorageWarning();
+    return result;
+});
+
+/**
+ * Call the API. The API is on this phone — see local-api.js — but the shape of
+ * this function is still fetch's, because that is what every screen was written
+ * against and there is nothing to gain by rewriting eighteen call sites.
+ *
  * @param {string} url
  * @param {RequestInit} options
  * @returns {Promise<any>}
  */
 async function fetchJSON(url, options = {}) {
-    const defaults = {
-        headers: { "Content-Type": "application/json" },
-    };
-    const merged = { ...defaults, ...options };
-    if (options.headers) {
-        merged.headers = { ...defaults.headers, ...options.headers };
+    const storage = await appReady;
+
+    const method = (options.method || "GET").toUpperCase();
+    let body = {};
+    if (options.body) {
+        try {
+            body = JSON.parse(options.body);
+        } catch (err) {
+            throw new Error("Could not read request body");
+        }
     }
 
-    const response = await fetch(url, merged);
+    const { status, body: payload } = RattlesnakeAPI.handleRequest(storage.store, method, url, body);
 
-    if (response.status === 204) {
+    // Wait for the write to land before answering. Saving a routine sets
+    // location.href on the very next line, and a page that goes away takes any
+    // unfinished IndexedDB transaction with it — so resolving early here is a
+    // lost workout. An HTTP call gave this guarantee by accident; this is it
+    // said out loud.
+    if (method !== "GET") {
+        await storage.settled();
+    }
+
+    if (status === 204) {
         return null;
     }
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.error || `Request failed: ${response.status}`);
+    if (status >= 400) {
+        throw new Error((payload && payload.error) || `Request failed: ${status}`);
     }
+    return payload;
+}
 
-    return data;
+/**
+ * Say so, once, when nothing can be saved.
+ *
+ * This is the one failure the lifter has to hear about immediately: the app
+ * looks completely normal with storage blocked, right up until the session is
+ * gone. Usually it means a private window.
+ */
+function showStorageWarning() {
+    if (document.getElementById("storage-warning")) return;
+
+    const banner = document.createElement("div");
+    banner.id = "storage-warning";
+    banner.className = "storage-warning";
+    banner.setAttribute("role", "alert");
+    banner.textContent =
+        "This browser is not letting Rattlesnake save. Your workout will be lost when you close the tab.";
+
+    const mount = () => document.body.prepend(banner);
+    if (document.body) mount();
+    else document.addEventListener("DOMContentLoaded", mount);
 }
 
 /**

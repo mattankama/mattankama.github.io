@@ -661,6 +661,24 @@ svg {
     box-shadow: inset 0 0 0 1px var(--danger-line);
 }
 
+/* The one error that is not about a container: storage is blocked, so nothing
+   the lifter does today will still be here tomorrow. Same tinted-panel-with-a-
+   ring language as .inline-error, pinned above everything because it is not
+   about the screen you happen to be on. */
+.storage-warning {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--s3)) var(--s4) var(--s3);
+    background: var(--danger-tint);
+    backdrop-filter: blur(12px);
+    color: var(--danger);
+    font-size: var(--t-sm);
+    font-weight: 600;
+    text-align: center;
+    box-shadow: inset 0 -1px 0 var(--danger-line);
+}
+
 /* --------------------------------------------------------------------------
    11. Empty state
    -------------------------------------------------------------------------- */
