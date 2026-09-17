@@ -5,9 +5,6 @@ __pycache__/
 *.pyo
 venv/
 .venv/
-*.db
-*.db.bak-*
-instance/
 .pytest_cache/
 htmlcov/
 .coverage
@@ -17,3 +14,6 @@ flask_output.log
 # Claude Code — machine-local, never committed
 .claude/worktrees/
 .claude/settings.local.json
+
+# Build output — `python3 scripts/build_static.py` regenerates it
+dist/

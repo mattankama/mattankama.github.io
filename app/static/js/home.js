@@ -42,7 +42,7 @@ async function loadRoutines() {
                 </div>
                 <div class="routine-card-actions">
                     <button class="btn btn-primary" data-action="start" data-id="${r.id}">Start</button>
-                    <a href="/routine/${r.id}/edit" class="btn-text">Edit</a>
+                    <a href="/routine/?id=${r.id}" class="btn-text">Edit</a>
                 </div>
             </div>
         `
@@ -70,7 +70,7 @@ async function startRoutine(routineId, btn) {
             method: "POST",
             body: JSON.stringify({ routine_id: routineId }),
         });
-        window.location.href = `/session/${session.id}`;
+        window.location.href = `/session/?id=${session.id}`;
     } catch (err) {
         if (btn) btn.disabled = false;
         showError(container, `Could not start the session: ${err.message}`);

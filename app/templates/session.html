@@ -27,7 +27,13 @@
     <button class="btn btn-primary" id="complete-session-btn">Complete Session</button>
 </div>
 
-<script>window.SESSION_ID = {{ session_id }};</script>
+<script>
+    // Which session, from `/session/?id=45`. See routine.html for why.
+    (function () {
+        const id = new URLSearchParams(location.search).get("id");
+        window.SESSION_ID = id && /^\d+$/.test(id) ? Number(id) : null;
+    })();
+</script>
 {% endblock %}
 
 {% block scripts %}

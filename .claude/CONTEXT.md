@@ -1,7 +1,7 @@
 # Rattlesnake — Context
 
 ## Overview
-A minimal, fast weightlifting companion web app for guiding workouts session-to-session. The app removes friction from logging: every exercise auto-fills with the sets, reps, and weight from the last time it was performed on a given instance, so the user can start lifting immediately and only adjust what changed. All data lives on-device (SQLite via Flask) — no account, no cloud sync.
+A minimal, fast weightlifting companion web app for guiding workouts session-to-session. The app removes friction from logging: every exercise auto-fills with the sets, reps, and weight from the last time it was performed on a given instance, so the user can start lifting immediately and only adjust what changed. All data lives on-device (IndexedDB, in the browser on the lifter's phone) — no account, no cloud sync, no server.
 
 ## Core Principles
 - **Speed over configuration** — every screen should get the user into a set as fast as possible.
@@ -130,13 +130,18 @@ keyboard. The hidden pane is `inert`, so it is never reachable by tabbing into i
 - An exercise with no completed history shows an empty state, not an empty chart.
 
 ## Persistence Requirements
-- SQLite database via Flask backend
+- IndexedDB, on the device. The app is a static site: the API runs in the browser
+  (`app/static/js/local-api.js`) and nothing is ever sent anywhere.
+- Durability rests on the app being added to the Home Screen. WebKit clears an origin's
+  storage after seven days without a visit; an installed web app is exempt and keeps its own
+  clock, reset by use. Installing is therefore a data-retention step, not a convenience.
 - Must persist:
   - Exercise and instance definitions (global, never auto-deleted)
   - Per-instance `lastSession` stats (sets, reps, weight)
   - Completed session history — the source Progress reads
   - Routine definitions
-- No network dependency for core functionality
+- No network dependency for core functionality — a service worker caches the whole app, so it
+  opens and logs a full session with no signal.
 
 ## Deletion Rules
 - **Deleting an exercise from a routine**: exercise and its instances/stats persist globally
