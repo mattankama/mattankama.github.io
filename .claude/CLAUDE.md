@@ -64,7 +64,7 @@ Two things to know about the bundled library, because its skills were written ge
 ## Protocol
 
 - **Both suites have to pass, and the JavaScript one is the important one.**
-  `node --test tests/js/*.test.js` — currently 127 tests, nothing to install — covers the code
+  `node --test tests/js/*.test.js` — nothing to install — covers the code
   that actually runs on the phone. `python3 -m pytest --cov=app --cov-report=term-missing` —
   currently 45 tests, 100%, and **90% coverage is the floor** — covers only page rendering and
   the build, so a green pytest run says almost nothing about the app. Fix failures and coverage
