@@ -1,0 +1,67 @@
+# Build Rattlesnake and publish it to GitHub Pages.
+#
+# There is no backend to deploy: `scripts/build_static.py` renders the four
+# pages and copies the static folder into `dist/`, and that folder is the whole
+# app. This workflow is the same build, run on a push instead of a laptop.
+#
+# Both suites gate the deploy. The JavaScript one covers the code that actually
+# runs on the phone, so a red run here means a broken app, not a broken build.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time. A queued run that has been superseded is cancelled
+# rather than racing the newer one to the same URL.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - run: pip install -r requirements.txt
+
+      # The main suite: the API, store, scope and worker, as they run on the phone.
+      - name: JavaScript tests
+        run: node --test tests/js/*.test.js
+
+      # Page rendering and the build. 90% is the floor, per .claude/CLAUDE.md.
+      - name: Python tests
+        run: python3 -m pytest --cov=app --cov-report=term-missing --cov-fail-under=90
+
+      - name: Build dist/
+        run: python3 scripts/build_static.py
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
