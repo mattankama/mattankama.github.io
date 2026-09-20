@@ -1,7 +1,7 @@
 /**
  * Rattlesnake — the API, running on the phone.
  *
- * This is a port of app/routes/api.py. It answers the same twenty routes with
+ * This is a port of app/routes/api.py. It answers the same routes with
  * the same JSON and the same status codes, so the screens in home.js,
  * routine.js, session.js and progress.js cannot tell the difference — they
  * still "call the API", the call just never leaves the device.
@@ -468,6 +468,82 @@ function layOutSetsFromInstance(store, entry, instance) {
     });
 }
 
+/**
+ * Permute a routine's exercises to match `exerciseIds`, leaving anything not in
+ * that list exactly where it was.
+ *
+ * A session and the routine it came from can have drifted apart — the routine
+ * may have gained or lost an exercise since the session started — so this fills
+ * only the slots the listed exercises already occupy. An exercise the lifter
+ * never saw on the session screen keeps its place, rather than being swept to
+ * the end by a wholesale rewrite.
+ *
+ * Positions are renumbered to a clean 0..n-1 run on the way out. They can be
+ * gappy (deleting an exercise globally drops its links and leaves holes) or
+ * absent entirely on a row written before the field existed, and a permutation
+ * over a mix of the two would not hold.
+ */
+function reorderRoutineToMatch(store, routineId, exerciseIds) {
+    const links = store
+        .filter("routine_exercises", (link) => link.routine_id === Number(routineId))
+        .sort(byPosition);
+
+    const order = links.map((link) => link.exercise_id);
+    const moving = new Set(exerciseIds.filter((id) => order.includes(id)));
+    const wanted = exerciseIds.filter((id) => moving.has(id));
+
+    let next = 0;
+    const byExercise = new Map(links.map((link) => [link.exercise_id, link]));
+    order
+        .map((exerciseId) => (moving.has(exerciseId) ? wanted[next++] : exerciseId))
+        .forEach((exerciseId, i) => {
+            store.put("routine_exercises", { ...byExercise.get(exerciseId), position: i });
+        });
+}
+
+/**
+ * Reorder a session's entries, and carry the new order back to the routine.
+ *
+ * The routine editor has a Save, so order there travels with the rest of the
+ * form. This screen has none — every other edit on it lands immediately — so a
+ * drag has to persist on the drop. It writes through to the routine because a
+ * lifter who reorders mid-workout is fixing the order they will want next time:
+ * the routine is the thing that carries an order forward, and leaving it alone
+ * would mean re-doing the same drag every session.
+ *
+ * A session whose routine has been deleted still reorders its own entries;
+ * `routine_id` is null on those, and there is simply nothing to write back to.
+ */
+function reorderSessionEntries(store, sessionId, body) {
+    const session = getSessionOr404(store, sessionId);
+    const entries = entriesOf(store, session.id);
+    const byEntryId = new Map(entries.map((entry) => [entry.id, entry]));
+
+    const wanted = Array.isArray(body && body.entry_ids) ? body.entry_ids.map(Number) : null;
+    const complaint = "entry_ids must list every entry in this session, once";
+    if (!wanted || wanted.length !== entries.length) return fail(complaint, 400);
+
+    const seen = new Set();
+    for (const id of wanted) {
+        if (!byEntryId.has(id) || seen.has(id)) return fail(complaint, 400);
+        seen.add(id);
+    }
+
+    wanted.forEach((id, i) => {
+        store.put("session_entries", { ...byEntryId.get(id), position: i });
+    });
+
+    if (session.routine_id) {
+        reorderRoutineToMatch(
+            store,
+            session.routine_id,
+            wanted.map((id) => byEntryId.get(id).exercise_id),
+        );
+    }
+
+    return ok(sessionDict(store, session));
+}
+
 function startSession(store, body) {
     const routineId = body.routine_id;
     if (!routineId) return fail("routine_id is required", 400);
@@ -604,8 +680,9 @@ function deleteSet(store, setId) {
 // Routing
 // ---------------------------------------------------------------------------
 
-// Same twenty routes as api.py, in the same order. `:id` matches one path
-// segment and arrives as a number.
+// The twenty routes api.py had, in the same order, plus entry-order — which
+// never existed on the server, because reordering mid-session was not a thing
+// the app could do. `:id` matches one path segment and arrives as a number.
 const ROUTES = [
     ["GET", "/api/exercises", (st) => listExercises(st)],
     ["POST", "/api/exercises", (st, _p, body) => createExercise(st, body)],
@@ -622,6 +699,7 @@ const ROUTES = [
     ["POST", "/api/sessions", (st, _p, body) => startSession(st, body)],
     ["GET", "/api/sessions/:id", (st, p) => getSession(st, p.id)],
     ["PUT", "/api/sessions/:id/complete", (st, p) => completeSession(st, p.id)],
+    ["PUT", "/api/sessions/:id/entry-order", (st, p, body) => reorderSessionEntries(st, p.id, body)],
     ["PUT", "/api/session-entries/:id/instance", (st, p, body) => switchEntryInstance(st, p.id, body)],
     ["POST", "/api/session-entries/:id/prefill", (st, p, body) => prefillEntry(st, p.id, body)],
     ["POST", "/api/session-entries/:id/sets", (st, p, body) => addSet(st, p.id, body)],

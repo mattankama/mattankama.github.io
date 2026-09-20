@@ -113,6 +113,9 @@ function loadWorker({ precached = [], online = true, redirects = [] } = {}) {
 
     request.install = request_install;
     request.stored = stored;
+    // `const` stays in the script's lexical scope rather than landing on the
+    // context, so the worker's own shell list is read by evaluating it in place.
+    request.shell = vm.runInContext("SHELL", context);
     return request;
 }
 
@@ -194,7 +197,11 @@ test("service worker, precaching", async (t) => {
     await t.test("stores every shell URL", async () => {
         const request = loadWorker({ online: true });
         await request.install();
-        for (const path of ["/", "/progress", "/routine/", "/session/", "/static/css/style.css"]) {
+        // Read off the worker's own SHELL rather than a copy of it, so the next
+        // file added to the app is covered without anyone editing this test —
+        // and an unlisted file is a broken screen on a phone with no signal.
+        assert.ok(request.shell.length > 5, "the shell list was not read");
+        for (const path of request.shell) {
             assert.ok(request.stored.has(ORIGIN + path), `${path} was not precached`);
         }
     });

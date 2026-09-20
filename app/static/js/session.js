@@ -3,12 +3,33 @@
  * Timer, exercise entries, instance selection, set management, completion.
  */
 
-// Timer state
+// Timer state.
+//
+// `startedAt` is an absolute instant, not a tally of ticks. iOS suspends a
+// backgrounded tab's web process outright: the interval callback does not run
+// late, it does not run at all, so a counter incremented once per beat
+// under-reports every rest taken with the phone in a pocket — and a number
+// that looks live while standing still is worse than one that has visibly
+// stopped. Reading the wall clock on every beat means a suspended tab simply
+// catches up the moment it wakes.
 const timer = {
     running: false,
-    seconds: 0,
+    startedAt: null,
     intervalId: null,
 };
+
+/**
+ * Rest longer than this is no longer rest, so the timer stops.
+ *
+ * It returns to 00:00 idle rather than freezing at the ceiling, for the reason
+ * above: a frozen readout is indistinguishable from a running one at a glance
+ * in bad gym light. Zero and unlit says plainly that nothing is being timed.
+ */
+const REST_CEILING_SECONDS = 600;
+
+// A finished session has no rest to time. Set on completion, and on load for a
+// session that was already complete when the screen opened.
+let sessionComplete = false;
 
 // Track custom dropdown instances by entry ID
 const instanceDropdowns = {};
@@ -22,6 +43,7 @@ async function init() {
         renderEntries(session.entries);
 
         if (session.status === "completed") {
+            sessionComplete = true;
             const btn = document.getElementById("complete-session-btn");
             btn.disabled = true;
             btn.textContent = "Session Complete";
@@ -37,6 +59,25 @@ async function init() {
         .getElementById("complete-session-btn")
         .addEventListener("click", completeSession);
 
+    // Only the header picks a card up — in practice the exercise name, the one
+    // sizeable inert thing on the card. The sets below own a horizontal swipe of
+    // their own, and two gestures competing for the same square of screen
+    // mid-set is how a lifter loses a rep.
+    RattlesnakeReorder.bind(document.getElementById("entries-list"), {
+        item: ".entry-block",
+        hold: ".entry-header",
+        never: "input, button, .instance-selector",
+        onDrop: saveEntryOrder,
+    });
+
+    // A suspended tab runs nothing, so the readout is stale the moment the app
+    // comes back. Both events cover a way back in: visibility for a tab that
+    // was backgrounded, pageshow for one restored from the back/forward cache.
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") resumeTimer();
+    });
+    window.addEventListener("pageshow", resumeTimer);
+
     // A row left open should close as soon as attention moves elsewhere.
     document.addEventListener("pointerdown", (e) => {
         const row = e.target.closest(".set-row");
@@ -48,25 +89,74 @@ async function init() {
 // Timer
 // ---------------------------------------------------------------------------
 
+/** Whole seconds between two instants, floored, and never negative: a phone
+ *  crossing a timezone or correcting its clock must not read as rest undone. */
+function elapsedSeconds(startedAt, now = Date.now()) {
+    if (startedAt === null) return 0;
+    return Math.max(0, Math.floor((now - startedAt) / 1000));
+}
+
 function resetAndStartTimer() {
-    if (timer.intervalId) {
-        clearInterval(timer.intervalId);
-    }
-    timer.seconds = 0;
+    if (sessionComplete) return;
+
+    timer.startedAt = Date.now();
     timer.running = true;
-    updateTimerDisplay();
+    updateTimerDisplay(0);
 
     // The running timer is the screen's only accent (ADR 0001).
     document.getElementById("timer-bar").classList.add("running");
 
-    timer.intervalId = setInterval(() => {
-        timer.seconds++;
-        updateTimerDisplay();
-    }, 1000);
+    restartTicking();
 }
 
-function updateTimerDisplay() {
-    document.getElementById("timer-display").textContent = formatTime(timer.seconds);
+function stopTimer() {
+    if (timer.intervalId) {
+        clearInterval(timer.intervalId);
+    }
+    timer.intervalId = null;
+    timer.running = false;
+    timer.startedAt = null;
+    updateTimerDisplay(0);
+    document.getElementById("timer-bar").classList.remove("running");
+}
+
+/** One beat: read the clock rather than a counter, and stop once rest is over. */
+function tickTimer() {
+    if (!timer.running) return;
+
+    const elapsed = elapsedSeconds(timer.startedAt);
+    if (elapsed >= REST_CEILING_SECONDS) {
+        stopTimer();
+        return;
+    }
+    updateTimerDisplay(elapsed);
+}
+
+/**
+ * Bring the display back in line after the tab was away.
+ *
+ * Nothing ran while the phone was pocketed, so the readout is stale by exactly
+ * however long that was — hence catching up here rather than waiting up to a
+ * second for the next beat. The interval is restarted rather than trusted to
+ * resume on its own: a display frozen by an interval that never came back is
+ * the bug this replaced, and a spare clearInterval costs nothing.
+ */
+function resumeTimer() {
+    if (!timer.running) return;
+
+    tickTimer();
+    if (timer.running) restartTicking();
+}
+
+function restartTicking() {
+    if (timer.intervalId) {
+        clearInterval(timer.intervalId);
+    }
+    timer.intervalId = setInterval(tickTimer, 1000);
+}
+
+function updateTimerDisplay(seconds) {
+    document.getElementById("timer-display").textContent = formatTime(seconds);
 }
 
 function formatTime(totalSeconds) {
@@ -491,6 +581,36 @@ async function removeSet(setId, entryId) {
     }
 }
 
+/**
+ * Persist the order the lifter just dragged, and let it reach the routine.
+ *
+ * There is no Save on this screen — every other edit here lands immediately —
+ * so the drop is the commit. The API carries the change through to the routine
+ * the session came from, because a lifter reordering mid-workout is fixing the
+ * order they will want next time, not just this once.
+ */
+async function saveEntryOrder() {
+    const entryIds = [...document.querySelectorAll(".entry-block")].map((block) =>
+        Number(block.id.slice("entry-".length)),
+    );
+
+    try {
+        await fetchJSON(`/api/sessions/${window.SESSION_ID}/entry-order`, {
+            method: "PUT",
+            body: JSON.stringify({ entry_ids: entryIds }),
+        });
+    } catch (err) {
+        // The cards are already in the new order on screen, so leaving them
+        // there would be the screen quietly lying about what was saved.
+        showError(
+            document.getElementById("session-content"),
+            `Could not save the new order: ${err.message}`
+        );
+        const session = await fetchJSON(`/api/sessions/${window.SESSION_ID}`);
+        renderEntries(session.entries);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Complete session
 // ---------------------------------------------------------------------------
@@ -505,6 +625,8 @@ async function completeSession() {
         await fetchJSON(`/api/sessions/${window.SESSION_ID}/complete`, {
             method: "PUT",
         });
+        sessionComplete = true;
+        stopTimer();
         window.location.href = "/";
     } catch (err) {
         btn.disabled = false;

@@ -1,6 +1,6 @@
 # 0001 — The rest timer is the session screen's only accent
 
-- **Status:** Accepted
+- **Status:** Accepted — amended by [ADR 0003](./0003-rest-timer-reads-a-wall-clock.md)
 - **Date:** 2026-09-13
 
 ## Context
@@ -23,6 +23,12 @@ A second fact shapes the resolution. Per `CONTEXT.md` the rest timer is a pure c
 with no pause and no countdown mode: `session.js` sets `timer.running = true` and adds the
 `running` class, and nothing ever reverses either. Once the first set is checked, the timer
 runs for the remainder of the session.
+
+> **Amended 2026-09-18 by [ADR 0003](./0003-rest-timer-reads-a-wall-clock.md).** The timer
+> now stops — at a ten-minute ceiling and on session completion — so the paragraph above no
+> longer describes the code. The decision below is unaffected: a stopped timer returns the
+> screen to zero accents, which §2 permits, and ADR 0003 says why the ceiling is not the
+> bounded rest window rejected further down.
 
 ## Decision
 

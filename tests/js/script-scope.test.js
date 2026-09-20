@@ -1,7 +1,7 @@
 /**
  * The data layer must survive sharing a scope with the screens.
  *
- * Every file ships as a plain <script>, so all nine of them land in one global
+ * Every file ships as a plain <script>, so all ten of them land in one global
  * scope in load order. local-api.js and session.js/routine.js both wanted the
  * names `updateSet`, `addSet`, `completeSession` and `deleteRoutine`; the screen
  * scripts load last, so their versions won and four API routes silently ran UI
@@ -22,7 +22,9 @@ const vm = require("node:vm");
 
 const JS = path.join(__dirname, "../../app/static/js");
 
-const DATA_LAYER = ["store.js", "local-api.js", "persist.js"];
+// Every file that wraps itself in a namespace, data layer or not: reorder.js
+// is screen code, but it ships the same way and must leak just as little.
+const NAMESPACED = ["store.js", "local-api.js", "persist.js", "reorder.js"];
 const SCREENS = ["app.js", "pager.js", "home.js", "progress.js", "routine.js", "session.js"];
 
 /** Every name these files declare at the top of a line — near enough to scope. */
@@ -43,6 +45,7 @@ const LOAD_ORDER = [
     "local-api.js",
     "persist.js",
     "app.js",
+    "reorder.js",
     "pager.js",
     "home.js",
     "progress.js",
@@ -105,9 +108,10 @@ test("script scope", async (t) => {
         assert.equal(typeof page.RattlesnakeStore.createStore, "function");
         assert.equal(typeof page.RattlesnakeAPI.handleRequest, "function");
         assert.equal(typeof page.RattlesnakePersist.boot, "function");
+        assert.equal(typeof page.RattlesnakeReorder.bind, "function");
     });
 
-    await t.test("the data layer leaks no bare globals", () => {
+    await t.test("the namespaced modules leak no bare globals", () => {
         const page = loadPage();
 
         // Derived rather than listed, so a name added to the data layer later is
@@ -115,7 +119,7 @@ test("script scope", async (t) => {
         // screens also declare is theirs to own — that is the collision this
         // whole file exists for, and the next test proves it is now harmless.
         const screenNames = declaredNames(SCREENS);
-        const leaked = [...declaredNames(DATA_LAYER)]
+        const leaked = [...declaredNames(NAMESPACED)]
             .filter((name) => !screenNames.has(name))
             .filter((name) => page[name] !== undefined);
 
