@@ -6,7 +6,7 @@ A minimal, fast weightlifting companion web app for guiding workouts session-to-
 ## Core Principles
 - **Speed over configuration** — every screen should get the user into a set as fast as possible.
 - **Minimal input surface** — the create screen only asks for what's strictly needed.
-- **Rest timer is always reachable** — pinned to the top of the screen during a session, counts up automatically.
+- **Rest timer is always reachable** — pinned to the top of the screen during a session, counts up automatically, and stops once rest stops meaning anything.
 - **History is per-instance, not per-exercise** — the same exercise performed on a different instance is tracked separately, since the weight/resistance scale differs between instances. This governs Progress as much as pre-fill: a trend line that mixed instances would plot incomparable numbers.
 - **Stats are global** — per Exercise+Instance stats carry over across all routines, not scoped to a single routine.
 
@@ -81,11 +81,16 @@ Bare-bones screen, nothing beyond what's needed:
 - Input: routine name
 - Exercise list: add exercises by name (autocomplete from existing global exercises, or create new)
 - For each exercise: optionally view/add instances
-- Reorder exercises
+- **Reorder exercises** — press and hold a card for 400ms, then drag it up or down. The
+  press starts anywhere on the card that is not itself a control. Order is part of the form
+  like everything else here: it is written by Save and discarded by Cancel.
 - Save button
 
 ### 3. Start / Perform Session
 - **Rest timer** — fixed/sticky to the top of the screen at all times. Displays a count-up timer (MM:SS) that starts at 0:00 paused. Auto-resets to 0:00 and begins counting when any set is marked complete. No adjustment buttons — purely informational.
+  - **It reads a wall clock, not its own ticks.** iOS suspends a backgrounded tab outright, so a timer that counted beats silently under-reported every rest taken with the phone in a pocket. Elapsed time is computed from the instant rest began, which means a phone put down mid-rest shows the true figure on return rather than the one it froze at. See [ADR 0003](../docs/adr/0003-rest-timer-reads-a-wall-clock.md).
+  - **It stops** — at ten minutes of rest, and when the session is completed. Stopping returns the bar to 0:00, unlit; it never freezes on a number. The ceiling is a staleness guard, not a rest cue: a phone put down for forty minutes would otherwise show an accurate and useless `40:00`. This is not a countdown and it raises no alert.
+  - **It does not survive a reload.** The start instant is screen state, held in memory and absent from the data model, so reopening the app shows an idle timer.
 - **Exercise list** — each exercise shows an instance selector (dropdown of existing instances + "Add new"). Selecting an instance pre-fills sets from that instance's `lastSession`. If no instance is selected or the instance has no history, sets start empty.
 - **A sole instance is selected for you.** An exercise with exactly one instance has it assigned, and its sets laid out, at the moment the session is started — one instance is not a choice, and the lifter should never be asked to confirm the only option there is. An instance with no history still gets one blank set, so there is always a row to type into. With two or more instances nothing is guessed. The auto-pick is a default, not a lock: the selector still lists every instance, and switching re-fills from the one chosen.
 - **Per-set controls**:
@@ -94,6 +99,13 @@ Bare-bones screen, nothing beyond what's needed:
   - Completed checkbox: tap to toggle
   - Add set / remove set buttons
 - **Instance switching**: selecting a different instance replaces the pre-filled sets with that instance's `lastSession`. Adding a new instance on-the-fly starts with blank sets.
+- **Reorder exercises** — the same press-and-hold drag as the routine editor. Only the
+  card's header picks it up — in practice the exercise name; the set rows below own a
+  horizontal swipe of their own.
+  There is no Save on this screen, so the drop is the commit — **and it writes the new order
+  back to the routine**, because a lifter reordering mid-workout is fixing the order they
+  will want next time, not just today. A session whose routine has been deleted reorders
+  itself alone. See [ADR 0004](../docs/adr/0004-reordering-mid-session-writes-back.md).
 - **Complete Session button** — pinned to the bottom of the screen, always reachable.
 
 ### 4. Complete & Save Session

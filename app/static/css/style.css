@@ -1018,6 +1018,78 @@ svg {
    14. SESSION — the working screen
    ========================================================================== */
 
+/* --- Drag to reorder ----------------------------------------------------- */
+
+/*
+ * iOS raises its text-selection loupe — the magnifier — on a long press over
+ * selectable text, at about the same moment the hold timer fires. Switching
+ * selection off at pickup is therefore far too late: the magnifier is already
+ * up, and it eats the gesture. A draggable card is not selectable at rest.
+ *
+ * Its inputs are handed back, because a long press in a text field is exactly
+ * the case where the magnifier and the callout are wanted — and a press on an
+ * input never starts a drag, so there is nothing to protect there.
+ */
+.exercise-row,
+.entry-block {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.exercise-row input,
+.entry-block input {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
+/*
+ * While a card is up, the list belongs to the drag and nothing in the document
+ * selects — including the inputs handed back above, and anything the card is
+ * dragged over on its way past. The class sits on the list (for `touch-action`) and on `body` (for
+ * the rest): the press that picks a card up is the same press that would start
+ * a selection, and a card dragged across a text input would otherwise select
+ * straight through it. `!important` because an input's own `-webkit-user-select`
+ * would win otherwise, and this lasts exactly as long as a finger is down.
+ */
+.reordering {
+    touch-action: none;
+}
+
+.reordering,
+.reordering * {
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+}
+
+/*
+ * Lifted is elevation, never transparency. Fading the dragged card would let
+ * the cards underneath read straight through it (§8) — on this canvas that
+ * says "broken", where a lighter surface and a real shadow say "in hand".
+ * The shadow is the one this system already owns, from `.autocomplete-list`.
+ */
+.lifted {
+    position: relative;
+    z-index: 30;
+    background: var(--surface-2);
+    box-shadow:
+        inset 0 1px 0 var(--specular),
+        inset 0 0 0 1px var(--edge-strong),
+        0 24px 48px -16px rgba(0, 0, 0, 0.85);
+}
+
+/* The siblings open the gap; the lifted card is transformed inline and must
+   never carry a transition while a finger is on it (§7). */
+.shifting {
+    transition: transform var(--dur) var(--ease);
+}
+
+.settling {
+    transition: transform var(--dur) var(--ease-spring);
+}
+
 /* --- The rest timer: a glass capsule floating over the content ----------- */
 
 .timer-bar {

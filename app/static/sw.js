@@ -25,6 +25,7 @@ const SHELL = [
     "/static/js/store.js",
     "/static/js/local-api.js",
     "/static/js/persist.js",
+    "/static/js/reorder.js",
     "/static/js/app.js",
     "/static/js/pager.js",
     "/static/js/home.js",

@@ -26,6 +26,17 @@ async function init() {
 
     document.getElementById("routine-form").addEventListener("submit", saveRoutine);
 
+    // Order is read off the DOM at save time (see saveRoutine), so the drag has
+    // nothing to persist of its own: moving the card *is* the edit, and Cancel
+    // discards it with the rest of the form.
+    RattlesnakeReorder.bind(document.getElementById("exercise-list"), {
+        item: ".exercise-row",
+        hold: ".exercise-row",
+        // iOS owns long-press on a text input — it opens the selection
+        // magnifier and the callout — and that is not a fight worth picking.
+        never: "input, button, .autocomplete-list",
+    });
+
     const deleteBtn = document.getElementById("delete-routine-btn");
     if (deleteBtn) {
         deleteBtn.addEventListener("click", showDeleteConfirm);

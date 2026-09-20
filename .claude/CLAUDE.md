@@ -50,7 +50,7 @@ Two things to know about the bundled library, because its skills were written ge
 | `app/__init__.py` | Flask app factory. Four page routes and a static folder, nothing else |
 | `app/routes/views.py` | Page routes; thin, renders the four templates |
 | `app/static/js/store.js` | In-memory relational store — the domain model in CONTEXT.md, in code |
-| `app/static/js/local-api.js` | **The API.** Twenty routes, all the domain logic, on the device |
+| `app/static/js/local-api.js` | **The API.** Twenty-one routes, all the domain logic, on the device |
 | `app/static/js/persist.js` | IndexedDB mirror — loads on boot, writes behind, `settled()` |
 | `app/static/sw.js` | Offline shell; served from the site root for scope |
 | `scripts/build_static.py` | Renders the four pages into `dist/` for deployment |
@@ -87,7 +87,7 @@ Two things to know about the bundled library, because its skills were written ge
 ## Working in the data layer
 
 `app/static/js/` is where the app is. Three files sit under the screens: `store.js` holds the
-rows, `local-api.js` answers the twenty routes against them, and `persist.js` mirrors the whole
+rows, `local-api.js` answers the twenty-one routes against them, and `persist.js` mirrors the whole
 thing into IndexedDB. The screens still call `fetchJSON` exactly as they did when there was a
 server; the call just never leaves the phone.
 
