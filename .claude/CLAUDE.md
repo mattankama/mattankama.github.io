@@ -63,6 +63,8 @@ Two things to know about the bundled library, because its skills were written ge
 
 ## Protocol
 
+- **Never make any changes that will alter or delete any user's data after creating a new build of the app.** 
+  If a modification seems like it could affect user data, you MUST stop and ask how to proceed
 - **Both suites have to pass, and the JavaScript one is the important one.**
   `node --test tests/js/*.test.js` — nothing to install — covers the code
   that actually runs on the phone. `python3 -m pytest --cov=app --cov-report=term-missing` —
