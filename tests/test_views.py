@@ -19,6 +19,12 @@ class TestViewRoutes:
         resp = client.get("/")
         assert b"create-routine-btn" in resp.data
 
+    def test_home_page_has_autosave_note_slot(self, client):
+        """Hidden until home.js reports a workout it saved for the lifter."""
+        resp = client.get("/")
+        assert b'id="autosave-note"' in resp.data
+        assert b'role="status" hidden' in resp.data
+
     def test_home_page_has_no_progress_button(self, client):
         """Progress is reached by swiping right — deliberately no control."""
         resp = client.get("/")

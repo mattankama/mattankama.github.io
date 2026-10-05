@@ -960,6 +960,12 @@ test("routing", async (t) => {
         c.post("/api/exercises", { name: "Bench Press" });
         assert.equal(c.get("/api/exercises?cachebust=1").status, 200);
     });
+
+    await t.test("complete-abandoned is a write, not a session id", () => {
+        const c = makeClient();
+        assert.equal(c.get("/api/sessions/complete-abandoned").status, 404);
+        assert.equal(c.post("/api/sessions/complete-abandoned").status, 200);
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -1015,6 +1021,11 @@ test("wire shapes", async (t) => {
             ["completed_at", "entries", "id", "routine_id", "routine_name", "started_at", "status"]);
         assert.equal(s.status, "in_progress");
         assert.equal(s.completed_at, null);
+    });
+
+    await t.test("the abandoned-session sweep", () => {
+        const c = makeClient();
+        assert.deepEqual(c.post("/api/sessions/complete-abandoned").body, { sessions: [] });
     });
 
     await t.test("a session entry", () => {

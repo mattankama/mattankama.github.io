@@ -550,12 +550,18 @@ function startSession(store, body) {
 
     const routine = getRoutineOr404(store, routineId);
 
+    // Starting a session is the lifter moving on, so whatever they edited and
+    // left open is saved now, before this one is laid out — which is also what
+    // lets a sole instance below pre-fill from the numbers just saved.
+    completeAbandoned(store, -Infinity);
+
     const session = store.add("sessions", {
         routine_id: routine.id,
         routine_name: routine.name,
         started_at: nowISO(),
         completed_at: null,
         status: "in_progress",
+        last_edited_at: null,
     });
 
     routineExercises(store, routine.id).forEach((exercise, i) => {
@@ -589,22 +595,134 @@ function completeSession(store, sessionId) {
 
     if (session.status === "completed") return fail("Session already completed", 400);
 
-    store.put("sessions", { ...session, status: "completed", completed_at: nowISO() });
+    const completed = store.put("sessions", {
+        ...session,
+        status: "completed",
+        completed_at: nowISO(),
+    });
+    writeLastSessions(store, completed);
 
+    return ok(sessionDict(store, completed));
+}
+
+/**
+ * Write each entry's sets back as its instance's lastSession — all of them, as
+ * laid out, ticked or not.
+ *
+ * `unlessNewer` is for an auto-save, which is dated in the past: an instance
+ * that a later completed session has already written keeps those numbers
+ * rather than going back to older ones. Complete is always dated now, so it
+ * never needs the check.
+ */
+function writeLastSessions(store, session, { unlessNewer = false } = {}) {
     for (const entry of entriesOf(store, session.id)) {
         const sets = setsOf(store, entry.id);
         if (!entry.instance_id || sets.length === 0) continue;
 
         const instance = store.get("instances", entry.instance_id);
         if (!instance) continue;
+        if (unlessNewer && newerCompletionOn(store, instance.id, session)) continue;
 
         store.put("instances", {
             ...instance,
             last_session_data: sets.map((s) => ({ weight: s.weight, reps: s.reps })),
         });
     }
+}
 
-    return ok(sessionDict(store, store.get("sessions", session.id)));
+/** Has another session completed at or after this one written this instance's lastSession? */
+function newerCompletionOn(store, instanceId, session) {
+    return store
+        .filter("session_entries", (e) => e.instance_id === instanceId && e.session_id !== session.id)
+        .some((entry) => {
+            const other = store.get("sessions", entry.session_id);
+            return (
+                other &&
+                other.status === "completed" &&
+                (other.completed_at || "") >= session.completed_at &&
+                setsOf(store, entry.id).length > 0
+            );
+        });
+}
+
+// ---------------------------------------------------------------------------
+// Abandoned sessions
+// ---------------------------------------------------------------------------
+
+/**
+ * How long an edited session sits before Home saves it for the lifter.
+ *
+ * Rest stops meaning anything at ten minutes (ADR 0003); an hour is well past
+ * any rest but still covers a long gap mid-workout. The wait only guards the
+ * paths that can still reach the session page — Back, another tab — because
+ * an auto-save is dated at the last edit, so waiting longer never misdates it.
+ */
+const ABANDONED_AFTER_MS = 60 * 60 * 1000;
+
+/**
+ * Note that the lifter changed what was lifted in a session.
+ *
+ * `last_edited_at` has three states, and the difference between the first two
+ * is what keeps this build away from data an older one wrote:
+ *   - absent: the row predates edit tracking. Edited or untouched, there is no
+ *     telling, so it is never stamped and never auto-saved.
+ *   - null: tracked, and nothing edited yet.
+ *   - a timestamp: the last time a number or a set changed.
+ *
+ * Only a weight, reps, a tick, or adding or removing a set calls this.
+ * Choosing an instance and reordering do not: they lay out last time's numbers
+ * or rearrange them, and a session left in that state records no lift.
+ */
+function markEdited(store, sessionId) {
+    const session = store.get("sessions", sessionId);
+    if (!session || session.status !== "in_progress") return;
+    if (!Object.prototype.hasOwnProperty.call(session, "last_edited_at")) return;
+
+    store.put("sessions", { ...session, last_edited_at: nowISO() });
+}
+
+function markEntryEdited(store, entryId) {
+    const entry = store.get("session_entries", entryId);
+    if (entry) markEdited(store, entry.session_id);
+}
+
+function isAbandoned(session, idleMs) {
+    if (session.status !== "in_progress" || typeof session.last_edited_at !== "string") {
+        return false;
+    }
+    const edited = Date.parse(session.last_edited_at);
+    return Number.isFinite(edited) && Date.now() - edited >= idleMs;
+}
+
+/**
+ * Complete every edited session idle for at least `idleMs`, oldest edit first.
+ *
+ * Exactly Complete, except the session is dated at its last edit — so Progress
+ * plots the workout when it happened, not when it was found — and no instance
+ * is handed older numbers than a later session already gave it.
+ */
+function completeAbandoned(store, idleMs) {
+    const byLastEdit = (a, b) =>
+        a.last_edited_at < b.last_edited_at ? -1 : a.last_edited_at > b.last_edited_at ? 1 : a.id - b.id;
+
+    return store
+        .filter("sessions", (session) => isAbandoned(session, idleMs))
+        .sort(byLastEdit)
+        .map((session) => {
+            const completed = store.put("sessions", {
+                ...session,
+                status: "completed",
+                completed_at: session.last_edited_at,
+            });
+            writeLastSessions(store, completed, { unlessNewer: true });
+            return completed;
+        });
+}
+
+/** Home's first call: save what the lifter edited and walked away from. */
+function saveAbandonedSessions(store) {
+    const saved = completeAbandoned(store, ABANDONED_AFTER_MS);
+    return ok({ sessions: saved.map((session) => sessionDict(store, session)) });
 }
 
 // ---------------------------------------------------------------------------
@@ -652,6 +770,7 @@ function addSet(store, entryId, body) {
         completed: false,
         position,
     });
+    markEntryEdited(store, entry.id);
     return ok(setDict(created), 201);
 }
 
@@ -667,12 +786,21 @@ function updateSet(store, setId, body) {
     if ("reps" in body) updated.reps = body.reps;
     if ("completed" in body) updated.completed = body.completed;
 
-    return ok(setDict(store.put("session_sets", updated)));
+    store.put("session_sets", updated);
+
+    // session.js commits on blur as well as change, so a tap in and out of a
+    // field re-sends the value already there. That is not an edit.
+    if (["weight", "reps", "completed"].some((field) => updated[field] !== s[field])) {
+        markEntryEdited(store, s.entry_id);
+    }
+
+    return ok(setDict(updated));
 }
 
 function deleteSet(store, setId) {
     const s = getSetOr404(store, setId);
     store.remove("session_sets", s.id);
+    markEntryEdited(store, s.entry_id);
     return noContent();
 }
 
@@ -680,9 +808,10 @@ function deleteSet(store, setId) {
 // Routing
 // ---------------------------------------------------------------------------
 
-// The twenty routes api.py had, in the same order, plus entry-order — which
-// never existed on the server, because reordering mid-session was not a thing
-// the app could do. `:id` matches one path segment and arrives as a number.
+// The twenty routes api.py had, in the same order, plus two the server never
+// had: entry-order, because reordering mid-session was not a thing the app
+// could do, and complete-abandoned, because a server-side session could not be
+// lost to a killed tab. `:id` matches one path segment and arrives as a number.
 const ROUTES = [
     ["GET", "/api/exercises", (st) => listExercises(st)],
     ["POST", "/api/exercises", (st, _p, body) => createExercise(st, body)],
@@ -697,6 +826,7 @@ const ROUTES = [
     ["PUT", "/api/routines/:id", (st, p, body) => updateRoutine(st, p.id, body)],
     ["DELETE", "/api/routines/:id", (st, p) => deleteRoutine(st, p.id)],
     ["POST", "/api/sessions", (st, _p, body) => startSession(st, body)],
+    ["POST", "/api/sessions/complete-abandoned", (st) => saveAbandonedSessions(st)],
     ["GET", "/api/sessions/:id", (st, p) => getSession(st, p.id)],
     ["PUT", "/api/sessions/:id/complete", (st, p) => completeSession(st, p.id)],
     ["PUT", "/api/sessions/:id/entry-order", (st, p, body) => reorderSessionEntries(st, p.id, body)],

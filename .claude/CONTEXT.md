@@ -20,6 +20,17 @@ A minimal, fast weightlifting companion web app for guiding workouts session-to-
 
 **Session** — a single performance of a routine on a given day. Created by "starting" a routine. Tracks which instance was used for each exercise, the sets performed, and completion status. When completed, updates each instance's `lastSession` with the sets as laid out (regardless of individual set completion status).
 
+**Abandoned session** — an in-progress Session the lifter edited and then left open: the tab
+was killed, the app relaunched to Home, and nothing can reach it any more. It is completed for
+them — on the first Home load an hour or more after its last edit, or the moment another session
+is started — exactly as Complete would, except it is dated at its last edit, and an instance
+whose `lastSession` a later completed session already wrote keeps those numbers. An *edit* is
+changing a weight or reps, ticking or unticking a set, or adding or removing one. Choosing an
+instance is not, nor is reordering, nor is opening the session: those only lay out or rearrange
+last time's numbers, so an untouched session records no lift and is never auto-saved. Nor is a
+session started before edit tracking existed — there is no telling whether it was touched, so it
+is left exactly as it is. See [ADR 0005](../docs/adr/0005-abandoned-sessions-save-at-last-edit.md).
+
 **Set** — a single work set within a session entry: weight, reps, and a completed flag. The completed flag is for in-session tracking only; all sets (completed or not) are saved to `lastSession` on session completion.
 
 **lastSession** — the most recent sets data for a specific instance. A list of `{ weight, reps }`. Used to pre-fill sets when that instance is next selected in any routine.
@@ -51,8 +62,10 @@ A minimal, fast weightlifting companion web app for guiding workouts session-to-
 - `id`
 - `routine_id` — nullable (routine may be deleted after session was recorded)
 - `started_at`
-- `completed_at` — null while in progress
+- `completed_at` — null while in progress; for an auto-saved Abandoned session, its last edit
 - `status` — `in_progress` | `completed`
+- `last_edited_at` — three states, deliberately. **Absent**: the row predates edit tracking and
+  is never auto-saved. **null**: tracked, nothing edited yet. **A timestamp**: the last edit.
 - `entries` — list of SessionEntry
 
 **SessionEntry**
@@ -114,6 +127,8 @@ Tapping "Complete Session":
 - For each SessionEntry, updates that instance's `lastSession` with ALL sets as laid out (regardless of individual completion status)
 - Persists the full session to storage
 
+A session left open is completed for you; see **Abandoned session**.
+
 ### 5. Progress
 Progress is not a page. It is the second pane of a pager whose first pane is Home, and
 sliding **left** is the only way to it. The track follows the finger for the whole drag and
@@ -138,7 +153,9 @@ keyboard. The hidden pane is `inert`, so it is never reachable by tabbing into i
 - **Session list** — the exact numbers (`date`, `weight × reps`), newest first. The chart
   is a glance; this is the record.
 - Sessions still in progress never appear — they are pre-filled from lastSession, so
-  charting one would plot a lift that has not happened.
+  charting one would plot a lift that has not happened. An auto-saved Abandoned session counts
+  once saved and is plotted at its last edit. Its exercises the lifter never touched plot as laid
+  out, the same as tapping Complete early would.
 - An exercise with no completed history shows an empty state, not an empty chart.
 
 ## Persistence Requirements
@@ -156,6 +173,7 @@ keyboard. The hidden pane is `inert`, so it is never reachable by tabbing into i
   opens and logs a full session with no signal.
 
 ## Deletion Rules
+- **Sessions are never deleted** — completed, abandoned, or never touched.
 - **Deleting an exercise from a routine**: exercise and its instances/stats persist globally
 - **Deleting a routine**: only the routine definition is removed; exercises, instances, stats, and session history are untouched
 - **Deleting an exercise globally**: removes the exercise and its instances from the system
