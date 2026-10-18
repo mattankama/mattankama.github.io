@@ -18,11 +18,11 @@
     <meta name="description" content="Free apps by Mattan Kama: Rattlesnake, Intonation and the SAT Regression Trainer.">
     <title>Mattan Kama</title>
     <link rel="icon" href="data:,">
-    <link rel="preload" href="/fonts/SourceSans3-Variable.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/SourceSans3-Variable.woff2" as="font" type="font/woff2" crossorigin>
     <style>
         @font-face {
             font-family: "Source Sans 3";
-            src: url("/fonts/SourceSans3-Variable.woff2") format("woff2");
+            src: url("fonts/SourceSans3-Variable.woff2") format("woff2");
             font-weight: 200 900;
             font-display: swap;
         }
@@ -30,7 +30,7 @@
         /* Georgia where it's installed; Gelasio, its metric-compatible stand-in, elsewhere. */
         @font-face {
             font-family: "Gelasio";
-            src: url("/fonts/Gelasio-Regular.woff2") format("woff2");
+            src: url("fonts/Gelasio-Regular.woff2") format("woff2");
             font-weight: 400;
             font-display: swap;
         }
@@ -198,14 +198,11 @@
                         <!-- Rattlesnake's own app icon -->
                         <svg viewBox="0 0 512 512">
                             <rect width="512" height="512" fill="#191D24"/>
-                            <defs>
-                                <path id="rs-body" d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332"/>
-                            </defs>
                             <g stroke-linecap="round" stroke-linejoin="round" fill="none">
                                 <path d="M 330 330 C 356 346, 378 358, 398 368" stroke="#B87D4B" stroke-width="38"/>
                                 <path d="M 384 360 C 396 366, 406 372, 415 377" stroke="#B87D4B" stroke-width="26"/>
-                                <use href="#rs-body" stroke="#B87D4B" stroke-width="54"/>
-                                <use href="#rs-body" stroke="#191D24" stroke-width="26" stroke-dasharray="22 48" stroke-dashoffset="44"/>
+                                <path d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332" stroke="#B87D4B" stroke-width="54"/>
+                                <path d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332" stroke="#191D24" stroke-width="26" stroke-dasharray="22 48" stroke-dashoffset="44"/>
                             </g>
                             <g transform="rotate(-16 380 176)">
                                 <ellipse cx="380" cy="176" rx="42" ry="31" fill="#B87D4B"/>
