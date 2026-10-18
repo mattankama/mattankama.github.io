@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        // Rattlesnake's pages lived at these addresses until October 2026. A bookmark,
+        // or the app left open across the move, lands here: send it to the same page
+        // at its new address, ?id= and all. Do not remove this: see README.md.
+        (function () {
+            var moved = {
+                "/progress": "/rattlesnake/progress",
+                "/progress/": "/rattlesnake/progress",
+                "/routine": "/rattlesnake/routine/",
+                "/routine/": "/rattlesnake/routine/",
+                "/session": "/rattlesnake/session/",
+                "/session/": "/rattlesnake/session/"
+            };
+            var to = moved[location.pathname];
+            if (to) location.replace(to + location.search);
+        })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Page not found · Mattan Kama</title>
+    <link rel="icon" href="data:,">
+    <style>
+        :root { --paper: #f1f3f2; --ink: #1d2228; --muted: #5a626b; --focus: #2f6fb3; }
+        @media (prefers-color-scheme: dark) {
+            :root { --paper: #15181c; --ink: #e7e9e7; --muted: #9ba2a9; --focus: #7fb0e6; }
+        }
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 1.0625rem;
+            line-height: 1.55;
+        }
+        main { max-width: 40rem; margin: 0 auto; padding: 80px 20px; }
+        h1 { margin: 0 0 12px; font-size: 2rem; line-height: 1.15; }
+        p { margin: 0 0 8px; color: var(--muted); }
+        a { color: var(--ink); text-underline-offset: 3px; display: inline-block; padding: 10px 0; font-weight: 600; }
+        a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>There's no page at this address</h1>
+    <p>It may have moved. Every app is listed on the home page.</p>
+    <a href="/">Go to the home page</a>
+</main>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        // Rattlesnake lived at this address until October 2026. A Home Screen icon
+        // added before it moved still opens here, inside the installed app, and that
+        // installed app is where the lifter's workouts are stored. Send it straight
+        // on to Rattlesnake. Do not remove this: see README.md.
+        if (navigator.standalone === true ||
+            matchMedia("(display-mode: standalone)").matches ||
+            matchMedia("(display-mode: fullscreen)").matches) {
+            location.replace("/rattlesnake/");
+        }
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Free apps by Mattan Kama: Rattlesnake, Intonation, the SAT Regression Trainer and Kiosk.">
+    <title>Mattan Kama</title>
+    <link rel="icon" href="data:,">
+    <link rel="preload" href="/fonts/archivo-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+        @font-face {
+            font-family: "Archivo";
+            src: url("/fonts/archivo-latin-var.woff2") format("woff2");
+            font-weight: 100 900;
+            font-stretch: 62% 125%;
+            font-display: swap;
+        }
+
+        :root {
+            --paper: #f1f3f2;
+            --ink: #1d2228;
+            --muted: #5a626b;
+            --rule: #d4d9db;
+            --tile: #ffffff;
+            --focus: #2f6fb3;
+            --intonation: #c74634;
+            --desmos: #004d96;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --paper: #15181c;
+                --ink: #e7e9e7;
+                --muted: #9ba2a9;
+                --rule: #2b3137;
+                --tile: #1e2328;
+                --focus: #7fb0e6;
+                --intonation: #e2654f;
+                --desmos: #5b9be0;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 1.0625rem;
+            line-height: 1.55;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        main {
+            max-width: 40rem;
+            margin: 0 auto;
+            padding: 80px 20px 56px;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: clamp(2.5rem, 9vw, 3.75rem);
+            font-weight: 800;
+            font-stretch: 125%;
+            line-height: 1;
+            letter-spacing: -0.01em;
+        }
+
+        .lede {
+            margin: 0 0 60px;
+            color: var(--muted);
+        }
+
+        .apps {
+            display: grid;
+            gap: 44px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 56px minmax(0, 1fr);
+            column-gap: 20px;
+        }
+
+        .mark {
+            width: 56px;
+            height: 56px;
+            overflow: hidden;
+            border-radius: 13px;
+            background: var(--tile);
+            box-shadow: inset 0 0 0 1px var(--rule);
+        }
+
+        .mark svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        h2 {
+            margin: 1px 0 6px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-stretch: 112%;
+            line-height: 1.2;
+        }
+
+        .app p {
+            max-width: 34rem;
+            margin: 0;
+        }
+
+        .links {
+            display: flex;
+            flex-wrap: wrap;
+            column-gap: 24px;
+            margin-top: 2px;
+        }
+
+        a {
+            color: inherit;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 3px;
+        }
+
+        /* 44px tall to the finger, without spreading the lines apart. */
+        .links a {
+            display: inline-block;
+            padding: 10px 0;
+        }
+
+        .open {
+            font-weight: 650;
+            text-decoration-thickness: 2px;
+        }
+
+        .secondary {
+            color: var(--muted);
+        }
+
+        a:hover {
+            text-decoration-thickness: 2px;
+        }
+
+        a:focus-visible {
+            outline: 2px solid var(--focus);
+            outline-offset: 3px;
+            border-radius: 2px;
+        }
+
+        footer {
+            margin-top: 72px;
+            padding-top: 8px;
+            border-top: 1px solid var(--rule);
+            color: var(--muted);
+            font-size: 0.9375rem;
+        }
+
+        @media (max-width: 480px) {
+            main { padding: 52px 16px 40px; }
+            .lede { margin-bottom: 44px; }
+            .app { grid-template-columns: 44px minmax(0, 1fr); column-gap: 16px; }
+            .mark { width: 44px; height: 44px; border-radius: 10px; }
+            h2 { font-size: 1.3125rem; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Mattan Kama</h1>
+    <p class="lede">Apps I've made, free for anyone to use.</p>
+
+    <ul class="apps">
+        <li class="app">
+            <div class="mark" aria-hidden="true">
+                <!-- Rattlesnake's own app icon -->
+                <svg viewBox="0 0 512 512">
+                    <rect width="512" height="512" fill="#191D24"/>
+                    <defs>
+                        <path id="rs-body" d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332"/>
+                    </defs>
+                    <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+                        <path d="M 330 330 C 356 346, 378 358, 398 368" stroke="#B87D4B" stroke-width="38"/>
+                        <path d="M 384 360 C 396 366, 406 372, 415 377" stroke="#B87D4B" stroke-width="26"/>
+                        <use href="#rs-body" stroke="#B87D4B" stroke-width="54"/>
+                        <use href="#rs-body" stroke="#191D24" stroke-width="26" stroke-dasharray="22 48" stroke-dashoffset="44"/>
+                    </g>
+                    <g transform="rotate(-16 380 176)">
+                        <ellipse cx="380" cy="176" rx="42" ry="31" fill="#B87D4B"/>
+                        <circle cx="400" cy="166" r="8" fill="#191D24"/>
+                    </g>
+                    <g fill="#799496">
+                        <ellipse cx="425" cy="383" rx="16" ry="13" transform="rotate(30 425 383)"/>
+                        <ellipse cx="444" cy="395" rx="13" ry="10" transform="rotate(30 444 395)"/>
+                        <ellipse cx="459" cy="405" rx="10" ry="8" transform="rotate(30 459 405)"/>
+                    </g>
+                </svg>
+            </div>
+            <div>
+                <h2>Rattlesnake</h2>
+                <p>A weightlifting log for your phone. Each exercise starts with the sets, reps and weight from your last time on that machine, so you only change what's different. Your workouts are saved on your phone, not online.</p>
+                <div class="links">
+                    <a class="open" href="/rattlesnake/">Open Rattlesnake</a>
+                    <a class="secondary" href="https://github.com/mattankama/rattlesnake">Source code</a>
+                </div>
+            </div>
+        </li>
+
+        <li class="app">
+            <div class="mark" aria-hidden="true">
+                <!-- Two tones a little apart: the beating the Labs are about -->
+                <svg viewBox="0 0 56 56" fill="none" stroke-linecap="round">
+                    <path d="M8 28 C10.4 20 12.3 20 14.7 28 S19 36 21.3 28 S25.7 20 28 28 S32.3 36 34.7 28 S39 20 41.3 28 S45.7 36 48 28" stroke="var(--intonation)" stroke-width="2.4" opacity="0.4"/>
+                    <path d="M8 28 C11.6 16 14.4 16 18 28 S24.4 40 28 28 S34.4 16 38 28 S44.4 40 48 28" stroke="var(--intonation)" stroke-width="2.6"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Intonation</h2>
+                <p>Interactive labs on the math and sound of tuning: why some chords ring and others wobble, where commas come from, and how tuning systems differ.</p>
+                <div class="links">
+                    <a class="open" href="/intonation/">Open Intonation</a>
+                    <a class="secondary" href="https://github.com/mattankama/intonation">Source code</a>
+                </div>
+            </div>
+        </li>
+
+        <li class="app">
+            <div class="mark" aria-hidden="true">
+                <!-- Points and the regression curve through them -->
+                <svg viewBox="0 0 56 56" fill="none">
+                    <g stroke="var(--rule)" stroke-width="1">
+                        <path d="M0 14H56M0 28H56M0 42H56M14 0V56M28 0V56M42 0V56"/>
+                    </g>
+                    <path d="M7 46 C22 44 34 36 49 9" stroke="var(--desmos)" stroke-width="2.4" stroke-linecap="round"/>
+                    <g fill="var(--desmos)">
+                        <circle cx="11" cy="42" r="2.6"/>
+                        <circle cx="18" cy="44" r="2.6"/>
+                        <circle cx="25" cy="38" r="2.6"/>
+                        <circle cx="32" cy="35" r="2.6"/>
+                        <circle cx="38" cy="25" r="2.6"/>
+                        <circle cx="45" cy="19" r="2.6"/>
+                    </g>
+                </svg>
+            </div>
+            <div>
+                <h2>SAT Regression Trainer</h2>
+                <p>Practice for the SAT math questions you can solve with a Desmos regression: 95 question types, each with a worked example. It expands <a href="https://github.com/Sceptrell/DesmosRegressionTrainer">Sceptrell's Desmos Regression Trainer</a>.</p>
+                <div class="links">
+                    <a class="open" href="/DesmosRegressionTrainerExpanded/">Open the trainer</a>
+                    <a class="secondary" href="https://github.com/mattankama/DesmosRegressionTrainerExpanded">Source code</a>
+                </div>
+            </div>
+        </li>
+
+        <li class="app">
+            <div class="mark" aria-hidden="true">
+                <!-- The barcode scanner that fills the form -->
+                <svg viewBox="0 0 56 56" fill="currentColor">
+                    <rect x="12" y="15" width="2.5" height="26"/>
+                    <rect x="16.5" y="15" width="1.2" height="26"/>
+                    <rect x="19.5" y="15" width="3.5" height="26"/>
+                    <rect x="25" y="15" width="1.2" height="26"/>
+                    <rect x="28" y="15" width="2.5" height="26"/>
+                    <rect x="32.5" y="15" width="1.2" height="26"/>
+                    <rect x="35.5" y="15" width="3.5" height="26"/>
+                    <rect x="41" y="15" width="1.2" height="26"/>
+                    <rect x="43" y="15" width="1.2" height="26"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Kiosk</h2>
+                <p>Puts a simple phone form in front of a Google Sheet, so many people can update it at once without breaking it. It has search and a barcode scanner, and was built for marching band uniform fittings. Kiosk runs on your own server, so there's no shared copy to open here.</p>
+                <div class="links">
+                    <a class="open" href="https://github.com/mattankama/kiosk#deploying">How to set it up</a>
+                    <a class="secondary" href="https://github.com/mattankama/kiosk">Source code</a>
+                </div>
+            </div>
+        </li>
+    </ul>
+
+    <footer>
+        <div class="links">
+            <a class="secondary" href="https://github.com/mattankama">Mattan Kama on GitHub</a>
+        </div>
+    </footer>
+</main>
+</body>
+</html>
