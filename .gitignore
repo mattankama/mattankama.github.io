@@ -1,0 +1,3 @@
+# Satoshi is licensed for self-hosting but not redistribution, so its file is
+# never committed here. The Pages workflow adds it from a secret at deploy time.
+fonts/Satoshi-Medium.woff2

@@ -1,0 +1,67 @@
+# Publishes the site to GitHub Pages.
+#
+# The home page uses Satoshi, under ITF's Free Font License. It allows self-hosting
+# the font on your own site, but not making the file available anywhere else, and
+# that includes this public repository. So the file is kept, base64-encoded, in the
+# SATOSHI_MEDIUM_WOFF2 secret, and added here at deploy time. To replace it:
+#
+#   base64 -i Satoshi-Medium.woff2 | gh secret set SATOSHI_MEDIUM_WOFF2
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Add Satoshi from its secret
+        env:
+          SATOSHI_MEDIUM_WOFF2: ${{ secrets.SATOSHI_MEDIUM_WOFF2 }}
+        run: |
+          if [ -z "$SATOSHI_MEDIUM_WOFF2" ]; then
+            echo "::error::The SATOSHI_MEDIUM_WOFF2 secret is missing."
+            exit 1
+          fi
+          printf '%s' "$SATOSHI_MEDIUM_WOFF2" | base64 -d > fonts/Satoshi-Medium.woff2
+          if [ "$(head -c 4 fonts/Satoshi-Medium.woff2)" != wOF2 ]; then
+            echo "::error::The SATOSHI_MEDIUM_WOFF2 secret is not a base64-encoded WOFF2 file."
+            exit 1
+          fi
+
+      - id: upload
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+      # The uploaded artifact holds a copy of Satoshi, and anyone signed in to GitHub
+      # can download the artifacts of a public repository. Pages has its own copy
+      # once the deployment is done, so delete it now instead of after a day.
+      - name: Delete the uploaded artifact
+        if: always() && steps.upload.outputs.artifact_id
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}
+        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID"
