@@ -14,52 +14,55 @@
         }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#090909">
     <meta name="description" content="Free apps by Mattan Kama: Rattlesnake, Intonation and the SAT Regression Trainer.">
     <title>Mattan Kama</title>
     <link rel="icon" href="data:,">
-    <link rel="preload" href="fonts/SourceSans3-Variable.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/Satoshi-Medium.woff2" as="font" type="font/woff2" crossorigin>
     <style>
         @font-face {
-            font-family: "Source Sans 3";
-            src: url("fonts/SourceSans3-Variable.woff2") format("woff2");
-            font-weight: 200 900;
+            font-family: "Satoshi";
+            src: url("fonts/Satoshi-Medium.woff2") format("woff2");
+            font-weight: 500;
             font-display: swap;
         }
 
-        /* Georgia where it's installed; Gelasio, its metric-compatible stand-in, elsewhere. */
         @font-face {
-            font-family: "Gelasio";
-            src: url("fonts/Gelasio-Regular.woff2") format("woff2");
-            font-weight: 400;
+            font-family: "Inter";
+            src: url("fonts/Inter-Variable.woff2") format("woff2-variations");
+            font-weight: 100 900;
             font-display: swap;
         }
 
         :root {
-            --canvas: #ffffff;
-            --canvas-soft: #fbf9f8;
-            --canvas-warm: #f1efed;
-            --hairline: #e4e1dd;
-            --ink: #161513;
-            --ink-wash-8: rgba(22, 21, 19, .08);
-            --accent-gold: #f0cc71;
-            --focus: #227e9e;
-            --sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
-            --serif: Georgia, "Gelasio", "Times New Roman", serif;
-            --gutter: clamp(20px, 5vw, 72px);
-            --content: 1200px;
+            --canvas: #090909;
+            --surface-1: #141414;
+            --surface-2: #1c1c1c;
+            --hairline-soft: #1a1a1a;
+            --ink: #ffffff;
+            --ink-muted: #999999;
+            --accent: #0099ff;
+            --display: "Satoshi", "Inter", system-ui, sans-serif;
+            --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+            --ease: cubic-bezier(.2, 0, 0, 1);
+            --gutter: clamp(20px, 4vw, 30px);
+            --content: 1199px;
         }
 
         *, *::before, *::after { box-sizing: border-box; }
+
+        ::selection { background: rgba(0, 153, 255, .35); }
 
         body {
             margin: 0;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: var(--canvas-soft);
+            background: var(--canvas);
             color: var(--ink);
-            font: 400 16px/1.4 var(--sans);
+            font: 400 15px/1.3 var(--body);
+            font-feature-settings: "cv01", "cv05", "cv09", "cv11", "ss03", "ss07";
             -webkit-font-smoothing: antialiased;
             -webkit-text-size-adjust: 100%;
         }
@@ -67,64 +70,62 @@
         a { color: var(--ink); text-decoration: none; }
 
         a:focus-visible {
-            outline: 2px solid var(--focus);
-            outline-offset: 2px;
+            outline: none;
+            box-shadow: 0 0 0 1px var(--accent);
+            border-radius: 4px;
         }
 
         .container {
+            width: 100%;
             max-width: var(--content);
             margin: 0 auto;
             padding: 0 var(--gutter);
-            box-sizing: content-box;
         }
 
-        .hero {
-            background: var(--canvas-warm);
-            padding: 48px 0 96px;
-            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 48px), 0 100%);
-        }
+        header { padding: clamp(64px, 12vw, 160px) 0 clamp(40px, 6vw, 72px); }
 
         h1 {
             margin: 0;
-            font: 400 56px/1.2 var(--serif);
+            font: 500 clamp(52px, 11vw, 85px)/.9 var(--display);
+            letter-spacing: -.05em;
             text-wrap: balance;
         }
 
-        .rule {
-            width: 40px;
-            height: 4px;
-            margin: 18px 0 24px;
-            background: var(--accent-gold);
-        }
-
-        main { padding: 48px 0; }
+        main { padding-bottom: 96px; }
 
         .apps {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-            gap: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: 20px;
             margin: 0;
             padding: 0;
             list-style: none;
         }
 
+        .apps li { display: grid; }
+
         .app {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            height: 100%;
+            align-items: flex-start;
+            gap: 20px;
             padding: 24px;
-            border-radius: 8px;
-            background: var(--canvas);
+            border-radius: 15px;
+            background: var(--surface-1);
+            transition: background-color 200ms var(--ease), transform 120ms var(--ease);
         }
+
+        .app:focus-visible { border-radius: 15px; }
+
+        .app:active { transform: scale(.97); }
 
         .mark {
             display: block;
-            width: 56px;
-            height: 56px;
+            width: 64px;
+            height: 64px;
             overflow: hidden;
-            border: 1px solid var(--hairline);
-            border-radius: 8px;
+            border-radius: 14px;
+            transition: transform 400ms var(--ease);
         }
 
         .mark svg {
@@ -133,59 +134,42 @@
             height: 100%;
         }
 
-        .row {
-            margin-top: auto;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+        @media (hover: hover) {
+            .app:hover { background: var(--surface-2); }
+            .app:hover .mark { transform: scale(1.04); }
         }
 
         h2 {
             margin: 0;
-            font: 800 20px/1.2 var(--sans);
+            font: 500 32px/1.13 var(--display);
+            letter-spacing: -1px;
+            text-wrap: balance;
         }
-
-        h2 a { transition: opacity 120ms ease; }
-        h2 a:hover { opacity: .6; }
-
-        .source {
-            display: inline-flex;
-            align-items: center;
-            margin-left: auto;
-            padding: 10px 16px;
-            border: 1px solid var(--ink);
-            border-radius: 4px;
-            font: 500 14px/16.8px var(--sans);
-            white-space: nowrap;
-            transition: background-color 120ms ease;
-        }
-
-        .source:hover { background: var(--ink-wash-8); }
 
         footer {
             margin-top: auto;
             padding: 20px 0;
-            background: var(--canvas);
+            border-top: 1px solid var(--hairline-soft);
         }
 
         footer a {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 12px 0;
-            font: 400 12px/20px var(--sans);
+            padding: 8px 0;
+            color: var(--ink-muted);
+            font: 500 13px/1.2 var(--body);
+            letter-spacing: -.13px;
+            transition: color 120ms var(--ease);
         }
 
-        footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+        footer a:hover { color: var(--ink); }
     </style>
 </head>
 <body>
-<header class="hero">
+<header>
     <div class="container">
         <h1>Mattan Kama</h1>
-        <div class="rule" aria-hidden="true"></div>
     </div>
 </header>
 
@@ -193,77 +177,68 @@
     <div class="container">
         <ul class="apps">
             <li>
-                <article class="app">
-                    <div class="mark" aria-hidden="true">
-                        <!-- Rattlesnake's own app icon -->
-                        <svg viewBox="0 0 512 512">
-                            <rect width="512" height="512" fill="#191D24"/>
-                            <g stroke-linecap="round" stroke-linejoin="round" fill="none">
-                                <path d="M 330 330 C 356 346, 378 358, 398 368" stroke="#B87D4B" stroke-width="38"/>
-                                <path d="M 384 360 C 396 366, 406 372, 415 377" stroke="#B87D4B" stroke-width="26"/>
-                                <path d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332" stroke="#B87D4B" stroke-width="54"/>
-                                <path d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332" stroke="#191D24" stroke-width="26" stroke-dasharray="22 48" stroke-dashoffset="44"/>
-                            </g>
-                            <g transform="rotate(-16 380 176)">
-                                <ellipse cx="380" cy="176" rx="42" ry="31" fill="#B87D4B"/>
-                                <circle cx="400" cy="166" r="8" fill="#191D24"/>
-                            </g>
-                            <g fill="#799496">
-                                <ellipse cx="425" cy="383" rx="16" ry="13" transform="rotate(30 425 383)"/>
-                                <ellipse cx="444" cy="395" rx="13" ry="10" transform="rotate(30 444 395)"/>
-                                <ellipse cx="459" cy="405" rx="10" ry="8" transform="rotate(30 459 405)"/>
-                            </g>
-                        </svg>
-                    </div>
-                    <div class="row">
-                        <h2><a href="/rattlesnake/">Rattlesnake</a></h2>
-                        <a class="source" href="https://github.com/mattankama/rattlesnake">Source code</a>
-                    </div>
-                </article>
+                <a class="app" href="/rattlesnake/">
+                    <span class="mark" aria-hidden="true">
+                    <!-- Rattlesnake's own app icon -->
+                    <svg viewBox="0 0 512 512">
+                        <rect width="512" height="512" fill="#191D24"/>
+                        <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+                            <path d="M 330 330 C 356 346, 378 358, 398 368" stroke="#B87D4B" stroke-width="38"/>
+                            <path d="M 384 360 C 396 366, 406 372, 415 377" stroke="#B87D4B" stroke-width="26"/>
+                            <path d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332" stroke="#B87D4B" stroke-width="54"/>
+                            <path d="M 372 186 C 372 126, 306 112, 266 150 C 226 188, 254 246, 284 276 C 318 310, 310 374, 242 390 C 168 404, 106 364, 110 306 C 114 250, 170 228, 218 246 C 268 264, 300 302, 336 332" stroke="#191D24" stroke-width="26" stroke-dasharray="22 48" stroke-dashoffset="44"/>
+                        </g>
+                        <g transform="rotate(-16 380 176)">
+                            <ellipse cx="380" cy="176" rx="42" ry="31" fill="#B87D4B"/>
+                            <circle cx="400" cy="166" r="8" fill="#191D24"/>
+                        </g>
+                        <g fill="#799496">
+                            <ellipse cx="425" cy="383" rx="16" ry="13" transform="rotate(30 425 383)"/>
+                            <ellipse cx="444" cy="395" rx="13" ry="10" transform="rotate(30 444 395)"/>
+                            <ellipse cx="459" cy="405" rx="10" ry="8" transform="rotate(30 459 405)"/>
+                        </g>
+                    </svg>
+                    </span>
+                    <h2>Rattlesnake</h2>
+                </a>
             </li>
 
             <li>
-                <article class="app">
-                    <div class="mark" aria-hidden="true">
-                        <!-- Two tones a little apart: the beating the Labs are about -->
-                        <svg viewBox="0 0 56 56" fill="none" stroke-linecap="round">
-                            <rect width="56" height="56" fill="#ffffff"/>
-                            <path d="M8 28 C10.4 20 12.3 20 14.7 28 S19 36 21.3 28 S25.7 20 28 28 S32.3 36 34.7 28 S39 20 41.3 28 S45.7 36 48 28" stroke="#c74634" stroke-width="2.4" opacity="0.4"/>
-                            <path d="M8 28 C11.6 16 14.4 16 18 28 S24.4 40 28 28 S34.4 16 38 28 S44.4 40 48 28" stroke="#c74634" stroke-width="2.6"/>
-                        </svg>
-                    </div>
-                    <div class="row">
-                        <h2><a href="/intonation/">Intonation</a></h2>
-                        <a class="source" href="https://github.com/mattankama/intonation">Source code</a>
-                    </div>
-                </article>
+                <a class="app" href="/intonation/">
+                    <span class="mark" aria-hidden="true">
+                    <!-- Two tones a little apart: the beating the Labs are about -->
+                    <svg viewBox="0 0 56 56" fill="none" stroke-linecap="round">
+                        <rect width="56" height="56" fill="#ffffff"/>
+                        <path d="M8 28 C10.4 20 12.3 20 14.7 28 S19 36 21.3 28 S25.7 20 28 28 S32.3 36 34.7 28 S39 20 41.3 28 S45.7 36 48 28" stroke="#c74634" stroke-width="2.4" opacity="0.4"/>
+                        <path d="M8 28 C11.6 16 14.4 16 18 28 S24.4 40 28 28 S34.4 16 38 28 S44.4 40 48 28" stroke="#c74634" stroke-width="2.6"/>
+                    </svg>
+                    </span>
+                    <h2>Intonation</h2>
+                </a>
             </li>
 
             <li>
-                <article class="app">
-                    <div class="mark" aria-hidden="true">
-                        <!-- Points and the regression curve through them -->
-                        <svg viewBox="0 0 56 56" fill="none">
-                            <rect width="56" height="56" fill="#ffffff"/>
-                            <g stroke="#e4e1dd" stroke-width="1">
-                                <path d="M0 14H56M0 28H56M0 42H56M14 0V56M28 0V56M42 0V56"/>
-                            </g>
-                            <path d="M7 46 C22 44 34 36 49 9" stroke="#004d96" stroke-width="2.4" stroke-linecap="round"/>
-                            <g fill="#004d96">
-                                <circle cx="11" cy="42" r="2.6"/>
-                                <circle cx="18" cy="44" r="2.6"/>
-                                <circle cx="25" cy="38" r="2.6"/>
-                                <circle cx="32" cy="35" r="2.6"/>
-                                <circle cx="38" cy="25" r="2.6"/>
-                                <circle cx="45" cy="19" r="2.6"/>
-                            </g>
-                        </svg>
-                    </div>
-                    <div class="row">
-                        <h2><a href="/DesmosRegressionTrainerExpanded/">SAT Regression Trainer</a></h2>
-                        <a class="source" href="https://github.com/mattankama/DesmosRegressionTrainerExpanded">Source code</a>
-                    </div>
-                </article>
+                <a class="app" href="/DesmosRegressionTrainerExpanded/">
+                    <span class="mark" aria-hidden="true">
+                    <!-- Points and the regression curve through them -->
+                    <svg viewBox="0 0 56 56" fill="none">
+                        <rect width="56" height="56" fill="#ffffff"/>
+                        <g stroke="#e4e1dd" stroke-width="1">
+                            <path d="M0 14H56M0 28H56M0 42H56M14 0V56M28 0V56M42 0V56"/>
+                        </g>
+                        <path d="M7 46 C22 44 34 36 49 9" stroke="#004d96" stroke-width="2.4" stroke-linecap="round"/>
+                        <g fill="#004d96">
+                            <circle cx="11" cy="42" r="2.6"/>
+                            <circle cx="18" cy="44" r="2.6"/>
+                            <circle cx="25" cy="38" r="2.6"/>
+                            <circle cx="32" cy="35" r="2.6"/>
+                            <circle cx="38" cy="25" r="2.6"/>
+                            <circle cx="45" cy="19" r="2.6"/>
+                        </g>
+                    </svg>
+                    </span>
+                    <h2>SAT Regression Trainer</h2>
+                </a>
             </li>
         </ul>
     </div>
